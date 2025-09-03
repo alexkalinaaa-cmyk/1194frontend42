@@ -1,0 +1,22 @@
+{
+  "name": "JL Field Report",
+  "short_name": "Field Report",
+  "description": "iPad-first field report annotation and PDF generation tool",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#1e40af",
+  "background_color": "#ffffff",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "icons/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "lang": "en-US",
+  "prefer_related_applications": false
+}

@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no,maximum-scale=1,minimum-scale=1,shrink-to-fit=no">
+  
+  <!-- iOS Safari PWA Meta Tags for Home Screen App -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Field Report">
+  <meta name="mobile-web-app-capable" content="yes">
+  
+  <!-- Disable automatic phone number detection and data detection -->
+  <meta name="format-detection" content="telephone=no,email=no,address=no">
+  
+  <title>JL Field Report v1.0.0</title>
+  <link rel="icon" href="assets/favicon.ico">
+  
+  <!-- Apple Touch Icon for Home Screen - Single source -->
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.webmanifest">
+  
+  <link rel="stylesheet" href="assets/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js" crossorigin="anonymous"></script>
+  <script src="https://alcdn.msauth.net/browser/2.37.1/js/msal-browser.min.js" crossorigin="anonymous"></script>
+  <script src="assets/bootstrap.js" defer></script>
+  <script src="assets/db.js" defer></script>
+  <script src="assets/app.js" defer></script>
+  <script src="assets/library.js" defer></script>
+  <script src="assets/pdf-extraction.js" defer></script>
+  <script src="assets/floorplans.js" defer></script>
+  
+  <!-- PWA Enhancement Script -->
+  <script>
+    // PWA behavior enhancements for full-screen launch
+    (function() {
+      'use strict';
+      
+      // Detect PWA display mode
+      function isPWA() {
+        return window.matchMedia('(display-mode: standalone)').matches || 
+               window.navigator.standalone === true ||
+               document.referrer.includes('android-app://');
+      }
+      
+      // Enhanced PWA initialization
+      function initPWA() {
+        if (isPWA()) {
+          console.log('[PWA] Running in standalone mode');
+          document.body.classList.add('pwa-mode');
+          
+          // Prevent zoom/scroll bounce on iOS PWAs
+          document.addEventListener('touchmove', function(e) {
+            if (e.scale !== 1) {
+              e.preventDefault();
+            }
+          }, { passive: false });
+          
+          // Handle viewport changes for better full-screen experience
+          function handleViewportChange() {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+          }
+          
+          handleViewportChange();
+          window.addEventListener('resize', handleViewportChange);
+          window.addEventListener('orientationchange', () => {
+            setTimeout(handleViewportChange, 100);
+          });
+          
+          // Prevent context menu on long press in PWA mode
+          document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+          });
+          
+          // Enhanced status bar handling for iOS
+          if (window.navigator.userAgent.match(/iPad|iPhone|iPod/i)) {
+            const statusBarHeight = window.screen.height - window.innerHeight;
+            if (statusBarHeight > 0) {
+              document.documentElement.style.setProperty('--status-bar-height', `${statusBarHeight}px`);
+            }
+          }
+        }
+      }
+      
+      // Initialize when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initPWA);
+      } else {
+        initPWA();
+      }
+    })();
+  </script>
+
+  <!-- MSAL Configuration and Initialization -->
+  <script>
+    // MSAL Configuration
+    const msalConfig = {
+      auth: {
+        clientId: "20a2410e-314c-4ca4-8b50-5627f342d8fd", 
+        authority: "https://login.microsoftonline.com/3610ebdb-35ef-4ec0-a712-ae12b33ec9b9",
+        redirectUri: window.location.origin,
+        postLogoutRedirectUri: window.location.origin
+      },
+      cache: {
+        cacheLocation: "localStorage",
+        storeAuthStateInCookie: false,
+      },
+      system: {
+        loggerOptions: {
+          loggerCallback: (level, message, containsPii) => {
+            if (containsPii) return;
+            console.log(`[MSAL] ${message}`);
+          },
+          piiLoggingEnabled: false,
+        },
+      },
+    };
+
+    // create MSAL instance
+    let msalInstance;
+    let currentUser = null;
+
+    // initialize msales<100+ user database
+    async function initializeMsal() {
+      try {
+        msalInstance = new msal.PublicClientApplication(msalConfig);
+        await msalInstance.initialize();
+        
+        // Check if user is already signed in
+        const accounts = msalInstance.getAllAccounts();
+        if (accounts.length > 0) {
+          currentUser = accounts[0];
+          console.log('[MSAL] User already signed in:', currentUser.username);
+          updateUIForSignedInUser();
+        } else {
+          console.log('[MSAL] No user signed in');
+          updateUIForSignedOutUser();
+        }
+      } catch (error) {
+        console.error('[MSAL] Initialization failed:', error);
+      }
+    }
+
+    // login function
+    async function signIn() {
+      const loginRequest = {
+        scopes: ["user.read"],
+        prompt: "select_account"
+      };
+
+      try {
+        const loginResponse = await msalInstance.loginPopup(loginRequest);
+        currentUser = loginResponse.account;
+        console.log('[MSAL] Sign-in successful:', currentUser.username);
+        updateUIForSignedInUser();
+      } catch (error) {
+        console.error('[MSAL] Sign-in failed:', error);
+      }
+    }
+
+    // log out function
+    async function signOut() {
+      try {
+        await msalInstance.logoutPopup();
+        currentUser = null;
+        console.log('[MSAL] Sign-out successful');
+        updateUIForSignedOutUser();
+      } catch (error) {
+        console.error('[MSAL] Sign-out failed:', error);
+      }
+    }
+
+    // Update UI based on authentication state
+    function updateUIForSignedInUser() {
+      const authButton = document.getElementById('btn-settings');
+      if (authButton) {
+        authButton.innerHTML = '👤 ' + (currentUser.name || currentUser.username);
+        authButton.title = 'User: ' + currentUser.username;
+      }
+
+      // Update modal UI
+      const signedInInfo = document.getElementById('signed-in-info');
+      const signedOutInfo = document.getElementById('signed-out-info');
+      const userDisplayName = document.getElementById('user-display-name');
+      const userDisplayEmail = document.getElementById('user-display-email');
+
+      if (signedInInfo) signedInInfo.style.display = 'block';
+      if (signedOutInfo) signedOutInfo.style.display = 'none';
+      if (userDisplayName) userDisplayName.textContent = currentUser.name || 'Unknown Name';
+      if (userDisplayEmail) userDisplayEmail.textContent = currentUser.username || 'Unknown Email';
+    }
+
+    function updateUIForSignedOutUser() {
+      const authButton = document.getElementById('btn-settings');
+      if (authButton) {
+        authButton.innerHTML = '🔐 Sign In';
+        authButton.title = 'Sign in with Microsoft';
+      }
+
+      // Update modal UI
+      const signedInInfo = document.getElementById('signed-in-info');
+      const signedOutInfo = document.getElementById('signed-out-info');
+
+      if (signedInInfo) signedInInfo.style.display = 'none';
+      if (signedOutInfo) signedOutInfo.style.display = 'block';
+    }
+
+    // Get current user data for use in other parts of the app
+    function getCurrentUserData() {
+      if (currentUser) {
+        return {
+          name: currentUser.name || '',
+          email: currentUser.username || ''
+        };
+      }
+      return null;
+    }
+
+    // Make functions globally accessible
+    window.signIn = signIn;
+    window.signOut = signOut;
+    window.getCurrentUserData = getCurrentUserData;
+    window.updateUIForSignedInUser = updateUIForSignedInUser;
+    window.updateUIForSignedOutUser = updateUIForSignedOutUser;
+    
+    // Expose currentUser globally (will be updated by auth functions)
+    Object.defineProperty(window, 'currentUser', {
+      get: () => currentUser,
+      set: (value) => { currentUser = value; }
+    });
+
+    // Initialize MSAL when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeMsal);
+    } else {
+      initializeMsal();
+    }
+  </script>
+
+<style>
+
+/* === modal lock: prevent workspace interaction while Library open === */
+.modal-open .wrap{ pointer-events:none; user-select:none; -webkit-user-select:none; }
+.modal-open #board, .modal-open #board *{ touch-action:none; pointer-events:none; }
+.modal-open .tile.card{ pointer-events:none; user-select:none; -webkit-user-select:none; }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="title">JL Field Report</div>
+  <div class="meta">v1.0.0</div>
+  <div class="actions">
+    <button id="btn-settings" class="btn" title="Sign in with Microsoft">🔐 Sign In</button>
+    <button id="btn-sign" class="btn" title="Sign">Sign</button>
+  </div>
+</header>
+
+<div id="err" class="err" hidden></div>
+
+<main class="wrap">
+  <div class="workspace-grid">
+    <!-- Left Sidebar: Report Names -->
+    <aside class="reports-sidebar">
+      <div class="sidebar-header">
+        <h3 class="sidebar-title">Report Names+IDs</h3>
+        <button id="job-create" class="btn btn-green btn-small">New Report</button>
+      </div>
+      <div id="unified-list" class="jobs-list"></div>
+    </aside>
+    
+    <!-- Right Main Area: Cards + Controls -->
+    <main class="workspace-main">
+      <!-- Controls Row -->
+      <div class="workspace-controls">
+        <div class="controls-left">
+          <label class="control-group">
+            Job Name: <input id="job-name" type="text" placeholder="Enter job name (required)" class="input-small">
+          </label>
+          <label class="control-group">
+            Job Code: <input id="job-code" type="text" placeholder="Enter job code (required)" class="input-small">
+          </label>
+          <div id="storage-indicator" class="storage-indicator" title="Storage Usage">
+            <span id="storage-text">Storage: 0MB</span>
+            <div id="storage-bar" class="storage-bar">
+              <div id="storage-fill" class="storage-fill"></div>
+            </div>
+          </div>
+        </div>
+        <div class="controls-right">
+          <button id="btn-notes" class="btn btn-compact" title="Create Note">📝</button>
+          <button id="btn-floorplans" class="btn btn-blue" title="Floor Plans/Archivum">Floor Plans/Archivum</button>
+          <button id="lib-export" class="btn btn-red">Export PDF</button>
+        </div>
+      </div>
+      
+      <!-- Add Images Tile -->
+      <label class="add-tile add-tile-compact" id="add-tile">
+        <input id="file-input" type="file" accept="image/*" multiple hidden>
+        <div class="plus">＋</div>
+        <div class="add-text">Add Images</div>
+      </label>
+      
+      <!-- Cards Area -->
+      <div id="board" class="board board-compact" aria-label="Image board"></div>
+      
+      <!-- Location Row -->
+      <div class="location-row">
+        <label class="location-control">
+          Location (required): <input id="location-field" type="text" placeholder="Enter location or use locate button" class="location-input">
+        </label>
+        <button id="locate-btn" class="btn">📍 Locate</button>
+      </div>
+      
+      <div class="hint small">Drag cards between Report IDs to move them. Click cards to edit.</div>
+    </main>
+  </div>
+</main>
+
+<!-- Editor Modal -->
+<div class="modal" id="editor" hidden aria-hidden="true">
+  <div class="card editor-grid">
+    <div class="toolbar thin">
+      <div class="left tools">
+        <button data-tool="pen" class="btn tool active" title="Pen">✎</button>
+        <button data-tool="hilite" class="btn tool" title="Highlighter">🖍</button>
+        <button data-tool="shape" class="btn tool" title="Shape" style="font-size: 1.1em;">▲</button>
+        <button data-tool="eraser" class="btn tool" title="Eraser">⌫</button>
+        <button data-tool="text" class="btn tool" title="Text">T</button>
+        <label class="size" id="size-wrap"><span>Size</span><input id="size" type="range" min="2" max="48" value="8"></label>
+        <div class="swatches" id="swatches">
+          <button data-color="#FF3B30" class="swatch" title="Red"></button>
+          <button data-color="#FFF200" class="swatch" title="Yellow"></button>
+          <button data-color="#3FB7FF" class="swatch" title="Light Blue"></button>
+        </div>
+        <div class="shape-controls" id="shape-controls" style="display:none;">
+          <div class="shape-types">
+            <button data-shape="ellipse" class="btn shape-btn active" title="Ellipse">O</button>
+            <button data-shape="rectangle" class="btn shape-btn" title="Rectangle">▭</button>
+            <button data-shape="arrow" class="btn shape-btn" title="Arrow">→</button>
+          </div>
+          <button id="dashed-toggle" class="btn" title="Toggle Dashed Lines">Dashed?</button>
+        </div>
+      </div>
+      <div class="right">
+        <button id="btn-redo" class="btn" title="Redo" style="display:none;">↷</button>
+        <button id="btn-undo" class="btn" title="Undo" style="display:none;">↶</button>
+        <button id="btn-clear" class="btn">Clear ink</button>
+        <button id="btn-apply" class="btn btn-green">Apply</button>
+        <button id="btn-close" class="btn">Close</button>
+      </div>
+    </div>
+    <div class="stage-wrap">
+      <div class="stage" id="stage">
+        <canvas id="base-canvas"></canvas>
+        <canvas id="hi-canvas"></canvas>
+        <canvas id="ink-canvas"></canvas>
+        <canvas id="overlay-canvas"></canvas>
+        <div id="txt-layer" class="txt-layer" aria-hidden="false"></div>
+      </div>
+      <aside class="notes">
+        <textarea id="notes" placeholder="Notes…"></textarea>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- Note Editor Modal -->
+<div class="modal" id="note-editor" hidden aria-hidden="true">
+  <div class="card">
+    <div class="toolbar thin">
+      <div class="left">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
+          Name: <input id="note-name" type="text" placeholder="Optional" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--fg);">
+        </label>
+      </div>
+      <div class="right">
+        <button id="btn-note-apply" class="btn btn-green">Apply</button>
+        <button id="btn-note-close" class="btn">Close</button>
+      </div>
+    </div>
+    <div style="padding:16px;">
+      <div style="background:#E6F0FF;border:2px solid #B2CCFF;border-radius:8px;padding:16px;min-height:400px;">
+        <textarea id="note-content" placeholder="Enter your general notes here..." style="width:100%;height:360px;border:none;background:transparent;color:#000;resize:none;font-family:inherit;font-size:14px;line-height:1.4;" aria-label="General Notes"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Signature Modal -->
+<div class="modal" id="sign" hidden aria-hidden="true">
+  <div class="card sign-grid">
+    <div class="toolbar">
+      <div class="left">
+        <button id="sig-clear" class="btn">Clear</button>
+      </div>
+      <div class="right">
+        <button id="sig-redo" class="btn" title="Redo" style="display:none;">↷</button>
+        <button id="sig-undo" class="btn" title="Undo" style="display:none;">↶</button>
+        <button id="sig-save" class="btn btn-green">Save</button>
+        <button id="sig-close" class="btn">Close</button>
+      </div>
+    </div>
+    <div class="stage signpad"><canvas id="sig-canvas"></canvas></div>
+  </div>
+</div>
+
+<!-- Floor Plan Viewer Modal -->
+<div class="modal" id="floorplan-viewer" hidden aria-hidden="true">
+  <div class="card floorplan-viewer-grid">
+    <div class="toolbar thin">
+      <div class="left">
+        <div class="plan-navigation">
+          <button id="plan-prev" class="btn" title="Previous Plan">‹</button>
+          <div id="plan-counter" class="plan-counter">1 of 5</div>
+          <button id="plan-next" class="btn" title="Next Plan">›</button>
+        </div>
+        <div class="plan-tools">
+          <button data-floor-tool="pindrop" class="btn tool" title="Drop Pin">📍</button>
+          <button data-floor-tool="eraser" class="btn tool" title="Erase Pin">🗑</button>
+        </div>
+        <div id="plan-badge" class="plan-badge">23 plans</div>
+      </div>
+      <div class="right">
+        <button id="floor-viewer-close" class="btn">Close</button>
+      </div>
+    </div>
+    <div class="floor-viewer-content">
+      <div class="floor-viewer-main">
+        <div id="floor-canvas-container" class="floor-canvas-container">
+          <canvas id="floor-canvas"></canvas>
+          <svg id="floor-pins-layer" class="floor-pins-layer"></svg>
+        </div>
+      </div>
+      <aside class="floor-card-tray">
+        <div class="card-tray-header">
+          <div class="pane-title">Link to Card</div>
+          <div id="tray-hint" class="tray-hint">Select pin placement tool</div>
+        </div>
+        <div id="floor-card-tray-content" class="floor-card-tray-content"></div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- Pin Popover -->
+<div id="pin-popover" class="pin-popover" hidden>
+  <div class="pin-popover-content">
+    <div id="pin-popover-header" class="pin-popover-header">
+      <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+        <div id="pin-color-chip" class="pin-color-chip"></div>
+        <div id="pin-popover-title" class="pin-popover-title">Linked Pin</div>
+      </div>
+      <button id="pin-popover-close" class="pin-popover-close" title="Close">×</button>
+    </div>
+    <div class="pin-popover-main">
+      <div id="pin-popover-card-preview" class="pin-popover-card-preview" hidden>
+        <div class="pin-popover-card-image">
+          <img id="pin-popover-card-img" src="" alt="Card preview">
+        </div>
+        <div class="pin-popover-card-info">
+          <div id="pin-popover-card-name" class="pin-popover-card-name"></div>
+          <div id="pin-popover-card-type" class="pin-popover-card-type"></div>
+        </div>
+      </div>
+      <div id="pin-popover-body" class="pin-popover-body"></div>
+    </div>
+    <div id="pin-popover-actions" class="pin-popover-actions"></div>
+  </div>
+</div>
+
+<!-- User Menu Modal -->
+<div id="settings-overlay" class="overlay" hidden>
+  <section class="sheet small" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <header class="bar"><h3 id="settings-title" class="title">User Menu</h3></header>
+    <div class="content" style="display: flex; flex-direction: column; gap: 16px; padding: 16px;">
+      <div id="user-info-section">
+        <div id="signed-in-info" style="display: none; padding: 12px; background: var(--panel); border-radius: 8px; margin-bottom: 16px;">
+          <div style="font-weight: 600; color: var(--accent);">Signed in as:</div>
+          <div id="user-display-name" style="font-weight: 500;"></div>
+          <div id="user-display-email" style="color: var(--muted); font-size: 14px;"></div>
+          <button id="auth-action-btn-signout" class="btn btn-red" style="width: 100%; margin-top: 12px;">Sign Out</button>
+        </div>
+        <div id="signed-out-info" style="display: none; padding: 12px; background: var(--panel); border-radius: 8px; margin-bottom: 16px;">
+          <div style="color: var(--muted); margin-bottom: 12px;">Sign in with your Microsoft account to auto-fill your information in reports.</div>
+          <button id="auth-action-btn" class="btn btn-blue" style="width: 100%;">Sign In</button>
+        </div>
+      </div>
+      <label>Occupation (optional)<br><input id="set-occupation" class="input" placeholder="Optional" /></label>
+      <label>Contact Phone Number (optional)<br><input id="set-phone" class="input" placeholder="Optional" /></label>
+      <label>Theme<br>
+        <select id="set-theme" class="input">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+      </label>
+    </div>
+    <footer class="bar footer-actions">
+      <button id="settings-save" class="btn btn-green">Save</button>
+      <button id="settings-close" class="btn">Close</button>
+    </footer>
+  </section>
+</div>
+
+<!-- Job Details Modal -->
+<div id="job-details-overlay" class="overlay" hidden>
+  <section class="sheet small" role="dialog" aria-modal="true" aria-labelledby="job-details-title">
+    <header class="bar"><h3 id="job-details-title" class="title">Job Details</h3></header>
+    <div class="content grid2">
+      <label>Job Name (required)<br><input id="job-name-input" class="input" required /></label>
+      <label>Job Code (optional)<br><input id="job-code-input" class="input" /></label>
+    </div>
+    <footer class="bar footer-actions">
+      <button id="job-details-save" class="btn btn-green">Save</button>
+      <button id="job-details-cancel" class="btn">Cancel</button>
+    </footer>
+  </section>
+</div>
+
+
+<!-- Floor Plans/Archivum Modal -->
+<div id="floorplans-archivum-overlay" class="overlay" hidden>
+  <section class="sheet floorplans-archivum-sheet" role="dialog" aria-modal="true" aria-labelledby="floorplans-title">
+    <header class="bar">
+      <div>
+        <h3 id="floorplans-title" class="title">🏗️ Floor Plans/Archivum</h3>
+        <div id="floorplans-report-id" class="small" style="margin-top:4px; color:#3b82f6; font-weight:normal;"></div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button id="floorplans-close" class="btn">Close</button>
+      </div>
+    </header>
+    <div class="content floorplans-archivum-content">
+      <!-- Floor Plans Section -->
+      <section class="floorplans-section">
+        <div class="cards-header">
+          <div class="pane-title">🏗️ Floor Plan Viewer</div>
+        </div>
+        <div class="floorplan-upload-area">
+          <input id="floorplan-file-input" type="file" accept=".pdf" hidden>
+          <label for="floorplan-file-input" class="floorplan-upload-cta">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Upload Floor Plan PDF</div>
+            <div class="upload-hint">Select multi-page PDF with floor plans</div>
+          </label>
+        </div>
+        <div id="floorplan-cards-bucket" class="floorplan-cards-bucket"></div>
+      </section>
+      
+      <!-- PDF Reports Section (Archivum) -->
+      <section class="archivum-section">
+        <div class="cards-header">
+          <div class="pane-title">📄 PDF Reports</div>
+        </div>
+        <div id="pdf-bucket" class="pdf-bucket"></div>
+      </section>
+    </div>
+  </section>
+</div>
+
+<!-- Clear All Data Button - Bottom Right -->
+<button id="clear-all-data" class="btn btn-red clear-all-btn" title="Clear all stored data (fixes corruption)">Clear All Data</button>
+
+</body>
+</html>
