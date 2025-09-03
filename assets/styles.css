@@ -135,7 +135,7 @@
 }
 
 [data-theme="light"] .storage-bar {
-  background: #ffffff;
+  background: #f3f4f6;
 }
 
 /* Fix report name input visibility in light theme */
@@ -169,6 +169,39 @@
   border-color: #66bb6a;
 }
 
+[data-theme="green"] #btn-close,
+[data-theme="green"] #btn-clear,
+[data-theme="green"] #btn-undo,
+[data-theme="green"] #btn-redo,
+[data-theme="green"] #btn-note-close,
+[data-theme="green"] #settings-close,
+[data-theme="green"] #floorplans-close {
+  background: #2d4a2d;
+  color: #e8f5e8;
+  border-color: #4caf50;
+}
+
+[data-theme="green"] #btn-close:hover,
+[data-theme="green"] #btn-clear:hover,
+[data-theme="green"] #btn-undo:hover,
+[data-theme="green"] #btn-redo:hover,
+[data-theme="green"] #btn-note-close:hover,
+[data-theme="green"] #settings-close:hover,
+[data-theme="green"] #floorplans-close:hover {
+  background: #388e3c;
+  border-color: #66bb6a;
+}
+
+[data-theme="green"] .sheet,
+[data-theme="green"] .card {
+  background: #3d2f24;
+  border-color: #5d4037;
+}
+
+[data-theme="green"] .overlay {
+  background: rgba(74, 55, 40, 0.8);
+}
+
 /* Deep Purple theme - Enhanced purple elements */
 [data-theme="purple"] .app-header {
   background: #2d0a4e;
@@ -199,12 +232,12 @@
 
 [data-theme="purple"] .floorplans-archivum-sheet,
 [data-theme="purple"] .floorplans-archivum-content {
-  background: #3d1a78;
-  border-color: #6a1b9a;
+  background: #2d1b2d;
+  border-color: #4a148c;
 }
 
 [data-theme="purple"] .storage-bar {
-  background: #8e24aa;
+  background: #1a0d1a;
 }
 
 /* Sunset Orange theme - Enhanced sunset elements */
