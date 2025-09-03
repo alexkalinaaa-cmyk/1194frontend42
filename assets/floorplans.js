@@ -96,7 +96,10 @@
   
   // Function to clear pin selection state
   function clearPinSelection() {
-    console.log('Clearing pin selection state');
+    // Remove excessive logging - only log when actually clearing something
+    if (viewerState.isPlacingPin || viewerState.selectedUnlinkedPin || viewerState.justPlacedPinId) {
+      console.log('Clearing pin selection state');
+    }
     viewerState.isPlacingPin = false;
     viewerState.selectedUnlinkedPin = null;
     viewerState.justPlacedPinId = null;
@@ -687,6 +690,70 @@
     }
   }
   
+  // Floor Plan Card Thumbnail Generation
+  async function generateFloorPlanCardPreview(floorPlan, width = 150, height = 100) {
+    if (!floorPlan.plans || floorPlan.plans.length === 0) {
+      return null;
+    }
+    
+    // Use the first plan for the preview
+    const firstPlan = floorPlan.plans[0];
+    if (!firstPlan.imageUrl) {
+      return null;
+    }
+    
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          // Calculate aspect ratio and positioning
+          const imgAspect = img.width / img.height;
+          const canvasAspect = width / height;
+          
+          let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+          
+          if (imgAspect > canvasAspect) {
+            // Image is wider - fit to height, crop width
+            drawHeight = height;
+            drawWidth = height * imgAspect;
+            offsetX = -(drawWidth - width) / 2;
+          } else {
+            // Image is taller - fit to width, crop height  
+            drawWidth = width;
+            drawHeight = width / imgAspect;
+            offsetY = -(drawHeight - height) / 2;
+          }
+          
+          // Fill with light background
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillRect(0, 0, width, height);
+          
+          // Draw the image
+          ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+          
+          // Add subtle border
+          ctx.strokeStyle = '#e2e8f0';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(0, 0, width, height);
+          
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        } catch (error) {
+          console.warn('Failed to generate floor plan card preview:', error);
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = firstPlan.imageUrl;
+    });
+  }
+  
   // UI Rendering Functions
   
   async function renderFloorPlanCards() {
@@ -719,17 +786,36 @@
       const pins = await getPinsForFloorPlanCard(floorPlan.id);
       const pinsCount = pins.length;
       
+      // Initial HTML with placeholder
       floorPlanCard.innerHTML = `
         <div class="floorplan-card-header">
           <div class="floorplan-card-title" title="${floorPlan.filename}">${truncateFilename(floorPlan.filename)}</div>
           <div class="floorplan-card-badge">${plansCount} plans</div>
         </div>
         <div class="floorplan-card-meta">${pinsCount} pins</div>
-        <div class="floorplan-card-preview">
-          ${plansCount > 0 ? '<div style="font-size:12px;">Click to view plans</div>' : '<div style="font-size:12px;">Processing...</div>'}
+        <div class="floorplan-card-preview" id="preview-${floorPlan.id}">
+          ${plansCount > 0 ? '<div style="font-size:12px; padding: 8px; color: #64748b;">Generating preview...</div>' : '<div style="font-size:12px; padding: 8px; color: #64748b;">Processing...</div>'}
         </div>
         <button class="floorplan-card-delete" title="Delete Floor Plan">×</button>
       `;
+      
+      // Generate and update preview asynchronously (don't block UI)
+      if (plansCount > 0) {
+        generateFloorPlanCardPreview(floorPlan).then(previewUrl => {
+          const previewElement = document.getElementById(`preview-${floorPlan.id}`);
+          if (previewElement && previewUrl) {
+            previewElement.innerHTML = `<img src="${previewUrl}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px;" alt="Floor plan preview">`;
+          } else if (previewElement) {
+            previewElement.innerHTML = '<div style="font-size:12px; padding: 8px; color: #64748b;">Click to view plans</div>';
+          }
+        }).catch(error => {
+          console.warn('Failed to generate preview for floor plan:', floorPlan.id, error);
+          const previewElement = document.getElementById(`preview-${floorPlan.id}`);
+          if (previewElement) {
+            previewElement.innerHTML = '<div style="font-size:12px; padding: 8px; color: #64748b;">Click to view plans</div>';
+          }
+        });
+      }
       
       // Click to open viewer
       floorPlanCard.addEventListener('click', async function(e) {
