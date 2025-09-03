@@ -151,8 +151,8 @@
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // Balanced resolution for PDF quality vs file size
-        const maxDimension = 2000; // Reduced for reasonable file sizes while maintaining clarity
+        // High resolution for crisp PDF quality
+        const maxDimension = 4000; // Increased for higher quality fallback images
         let { width, height } = img;
         
         if (width > maxDimension || height > maxDimension) {
@@ -517,6 +517,9 @@
       }
     });
     
+    // Immediate pin count update instead of full re-render
+    await updatePinCountDisplay(floorPlanCardId);
+    
     return pin;
   }
   
@@ -541,18 +544,26 @@
   }
   
   async function deletePin(pinId) {
+    // Get pin info before deletion for immediate UI update
+    const pins = await loadPins();
+    const pinToDelete = pins.find(pin => pin.id === pinId);
+    const floorPlanCardId = pinToDelete ? pinToDelete.floorPlanCardId : null;
+    
     // Update memory cache immediately
     if (memoryPinsCache) {
       memoryPinsCache = memoryPinsCache.filter(pin => pin.id !== pinId);
     }
     
     // Update storage
-    const pins = await loadPins();
     const filteredPins = pins.filter(pin => pin.id !== pinId);
     await savePins(filteredPins);
     
-    // Refresh UI to show updated pin counts
-    await renderFloorPlanCards();
+    // Immediate pin count update instead of full re-render
+    if (floorPlanCardId) {
+      await updatePinCountDisplay(floorPlanCardId);
+    }
+    
+    // Update card tray if viewing current plan
     if (currentFloorPlanCard) {
       renderCardTray();
     }
@@ -660,6 +671,20 @@
     const removedFloorPlans = floorPlans.length - filteredFloorPlans.length;
     const removedPins = pins.length - filteredPins.length;
     
+  }
+  
+  // Immediate pin count update without full re-render
+  async function updatePinCountDisplay(floorPlanCardId) {
+    const floorPlanCard = document.querySelector(`[data-floor-plan-id="${floorPlanCardId}"]`);
+    if (!floorPlanCard) return;
+    
+    const pins = await getPinsForFloorPlanCard(floorPlanCardId);
+    const pinsCount = pins.length;
+    
+    const metaElement = floorPlanCard.querySelector('.floorplan-card-meta');
+    if (metaElement) {
+      metaElement.textContent = `${pinsCount} pins`;
+    }
   }
   
   // UI Rendering Functions
@@ -886,6 +911,9 @@
     const plan = currentFloorPlanCard.plans[currentPlanIndex];
     const canvas = $('#floor-canvas');
     const ctx = canvas.getContext('2d');
+    
+    // Track this as the last viewed floor plan for button preview
+    trackLastViewedFloorPlan(currentFloorPlanCard, currentPlanIndex);
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1629,9 +1657,9 @@
     hidePinPopover();
   }
   
-  // Debouncing for renderCardTray to prevent excessive calls
+  // Minimal debouncing for renderCardTray (reduced delay for better responsiveness)
   let renderCardTrayTimeout = null;
-  const renderCardTrayDebounced = (delay = 100) => {
+  const renderCardTrayDebounced = (delay = 10) => { // Reduced from 100ms to 10ms
     if (renderCardTrayTimeout) {
       clearTimeout(renderCardTrayTimeout);
     }
@@ -2191,6 +2219,111 @@
     
     // Initial render
     renderFloorPlanCards();
+    
+    // Load last viewed floor plan for button preview
+    loadLastViewedFloorPlan();
+  }
+  
+  // Floor Plan Button Preview Functionality
+  let lastViewedFloorPlan = null;
+  const BUTTON_PREVIEW_KEY = "JL_floorplan_button_preview";
+  
+  function trackLastViewedFloorPlan(floorPlanCard, planIndex = 0) {
+    if (!floorPlanCard || !floorPlanCard.plans || !floorPlanCard.plans[planIndex]) return;
+    
+    const plan = floorPlanCard.plans[planIndex];
+    lastViewedFloorPlan = {
+      floorPlanCardId: floorPlanCard.id,
+      planId: plan.id,
+      planIndex: planIndex,
+      imageUrl: plan.imageUrl,
+      timestamp: Date.now()
+    };
+    
+    // Save to storage for persistence across sessions
+    localStorage.setItem(BUTTON_PREVIEW_KEY, JSON.stringify(lastViewedFloorPlan));
+    
+    // Update button preview
+    updateFloorPlanButtonPreview();
+  }
+  
+  async function generatePreviewImage(imageUrl, size = 40) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Square preview with proper aspect ratio
+        canvas.width = size;
+        canvas.height = size;
+        
+        // Calculate dimensions to fit image in square while maintaining aspect ratio
+        const { width: imgWidth, height: imgHeight } = img;
+        const aspectRatio = imgWidth / imgHeight;
+        
+        let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
+        
+        if (aspectRatio > 1) {
+          // Wider than tall
+          drawHeight = size;
+          drawWidth = size * aspectRatio;
+          offsetX = -(drawWidth - size) / 2;
+        } else {
+          // Taller than wide or square
+          drawWidth = size;
+          drawHeight = size / aspectRatio;
+          offsetY = -(drawHeight - size) / 2;
+        }
+        
+        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = () => resolve(null);
+      img.src = imageUrl;
+    });
+  }
+  
+  async function updateFloorPlanButtonPreview() {
+    const button = document.getElementById('btn-floorplans');
+    if (!button || !lastViewedFloorPlan) {
+      // Reset button to text only
+      if (button) {
+        button.innerHTML = 'Floor Plans/Archivum';
+        button.style.backgroundImage = '';
+        button.style.backgroundSize = '';
+        button.style.backgroundPosition = '';
+        button.style.paddingLeft = '';
+      }
+      return;
+    }
+    
+    try {
+      const previewUrl = await generatePreviewImage(lastViewedFloorPlan.imageUrl, 32);
+      if (previewUrl) {
+        button.innerHTML = `<span style="margin-left: 40px;">Floor Plans</span>`;
+        button.style.backgroundImage = `url(${previewUrl})`;
+        button.style.backgroundSize = '32px 32px';
+        button.style.backgroundPosition = '8px center';
+        button.style.backgroundRepeat = 'no-repeat';
+        button.style.paddingLeft = '48px';
+      }
+    } catch (error) {
+      console.warn('Failed to generate floor plan button preview:', error);
+    }
+  }
+  
+  function loadLastViewedFloorPlan() {
+    try {
+      const saved = localStorage.getItem(BUTTON_PREVIEW_KEY);
+      if (saved) {
+        lastViewedFloorPlan = JSON.parse(saved);
+        updateFloorPlanButtonPreview();
+      }
+    } catch (error) {
+      console.warn('Failed to load last viewed floor plan:', error);
+    }
   }
   
   // Global exports for integration with existing system
@@ -2211,7 +2344,9 @@
     loadPins,
     restoreBlobUrls,
     getBlobUrl,
-    isLinkingActive: () => isLinkingActive
+    isLinkingActive: () => isLinkingActive,
+    trackLastViewedFloorPlan,
+    loadLastViewedFloorPlan
   };
   
   // Initialize when DOM is ready
