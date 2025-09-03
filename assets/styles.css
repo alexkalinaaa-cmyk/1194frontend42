@@ -74,7 +74,7 @@
 
 [data-theme="light"] .sheet,
 [data-theme="light"] .card {
-  background: #f8fafc;
+  background: #ffffff;
   border-color: var(--border);
 }
 
@@ -195,12 +195,12 @@
 
 
 [data-theme="green"] .overlay {
-  background: rgba(74, 55, 40, 0.8);
+  background: rgba(0, 0, 0, 0.8);
 }
 
 [data-theme="green"] .sheet,
 [data-theme="green"] .card {
-  background: #2d2419;
+  background: #1a2e1a;
   border-color: #5d4037;
 }
 
