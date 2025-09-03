@@ -142,8 +142,181 @@
   // API Configuration - Direct connection to Render backend
   const RENDER_BACKEND_URL = 'https://one193fbackend432.onrender.com';
 
+  // IP Geolocation as ultimate fallback
+  async function getIPLocation() {
+    const services = [
+      // Primary: ipapi.co (free, accurate)
+      async () => {
+        const response = await fetch('https://ipapi.co/json/', {
+          timeout: 5000
+        });
+        const data = await response.json();
+        if (data.latitude && data.longitude) {
+          return {
+            coords: {
+              latitude: parseFloat(data.latitude),
+              longitude: parseFloat(data.longitude),
+              accuracy: 5000 // IP location is typically accurate to city level
+            },
+            timestamp: Date.now()
+          };
+        }
+        throw new Error('Invalid IP location data');
+      },
+      
+      // Fallback: ip-api.com
+      async () => {
+        const response = await fetch('http://ip-api.com/json/', {
+          timeout: 5000
+        });
+        const data = await response.json();
+        if (data.status === 'success' && data.lat && data.lon) {
+          return {
+            coords: {
+              latitude: parseFloat(data.lat),
+              longitude: parseFloat(data.lon),
+              accuracy: 5000
+            },
+            timestamp: Date.now()
+          };
+        }
+        throw new Error('IP API failed or no location data');
+      }
+    ];
+    
+    for (let i = 0; i < services.length; i++) {
+      try {
+        console.log(`Trying IP geolocation service ${i + 1}`);
+        return await services[i]();
+      } catch (error) {
+        console.log(`IP geolocation service ${i + 1} failed:`, error.message);
+        if (i === services.length - 1) {
+          throw error;
+        }
+      }
+    }
+  }
+
+  // Google Geolocation API for enhanced positioning
+  async function getGoogleGeolocation(apiKey) {
+    if (!apiKey) {
+      throw new Error('Google API key not provided');
+    }
+    
+    try {
+      // Collect WiFi and cell tower info if available
+      const requestData = {
+        considerIp: true,
+        wifiAccessPoints: [],
+        cellTowers: []
+      };
+      
+      const response = await fetch(`https://www.googleapis.com/geolocation/v1/geolocate?key=${apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Google Geolocation API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.location) {
+        return {
+          coords: {
+            latitude: data.location.lat,
+            longitude: data.location.lng,
+            accuracy: data.accuracy || 1000
+          },
+          timestamp: Date.now()
+        };
+      }
+      
+      throw new Error('No location data from Google API');
+    } catch (error) {
+      console.error('Google Geolocation API failed:', error);
+      throw error;
+    }
+  }
+
+  // Retry logic with exponential backoff
+  async function retryWithBackoff(fn, maxRetries = 2, baseDelay = 1000) {
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        const delay = baseDelay * Math.pow(2, attempt);
+        console.log(`GPS attempt failed, retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  // Location smoothing for improved accuracy
+  function smoothLocationReadings(positions, maxDistanceThreshold = 100) {
+    if (!positions || positions.length === 0) return null;
+    if (positions.length === 1) return positions[0];
+    
+    // Filter out outliers that are too far from the median
+    const validPositions = positions.filter(pos => {
+      const distances = positions.map(otherPos => {
+        const R = 6371e3; // Earth radius in meters
+        const φ1 = pos.coords.latitude * Math.PI/180;
+        const φ2 = otherPos.coords.latitude * Math.PI/180;
+        const Δφ = (otherPos.coords.latitude-pos.coords.latitude) * Math.PI/180;
+        const Δλ = (otherPos.coords.longitude-pos.coords.longitude) * Math.PI/180;
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+      });
+      
+      const medianDistance = distances.sort((a, b) => a - b)[Math.floor(distances.length / 2)];
+      return medianDistance <= maxDistanceThreshold;
+    });
+    
+    if (validPositions.length === 0) return positions[0];
+    
+    // Weighted average based on accuracy (lower accuracy = higher weight)
+    let totalWeight = 0;
+    let weightedLat = 0;
+    let weightedLng = 0;
+    let bestAccuracy = Infinity;
+    
+    for (const pos of validPositions) {
+      const accuracy = pos.coords.accuracy || 100;
+      const weight = 1 / (accuracy + 1); // Add 1 to avoid division by zero
+      
+      weightedLat += pos.coords.latitude * weight;
+      weightedLng += pos.coords.longitude * weight;
+      totalWeight += weight;
+      
+      if (accuracy < bestAccuracy) {
+        bestAccuracy = accuracy;
+      }
+    }
+    
+    return {
+      coords: {
+        latitude: weightedLat / totalWeight,
+        longitude: weightedLng / totalWeight,
+        accuracy: bestAccuracy
+      },
+      timestamp: Date.now()
+    };
+  }
+
   // High-precision geolocation function
-  async function getPrecisePosition({ desiredAccuracy = 50, hardTimeoutMs = 15000 } = {}) {
+  async function getPrecisePosition({ desiredAccuracy = 20, hardTimeoutMs = 25000 } = {}) {
     if (!('geolocation' in navigator)) throw new Error('Geolocation not supported');
 
     // Ask for permission status so we can guide the user if denied
@@ -4873,12 +5046,14 @@
         console.error('Permission check error:', e);
       }
 
-      // Fast geolocation with 5 second total limit
+      // Enhanced geolocation with multiple readings for accuracy
       let position = null;
       let bestPosition = null;
+      let allPositions = [];
       const attempts = [
-        { enableHighAccuracy: true, timeout: 3000, maximumAge: 0 },     // Quick GPS attempt
-        { enableHighAccuracy: false, timeout: 2000, maximumAge: 30000 } // Fast network fallback
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },      // High-accuracy GPS attempt
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },   // Second GPS attempt with cache
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 30000 }   // Network fallback
       ];
 
       for (let i = 0; i < attempts.length; i++) {
@@ -4886,34 +5061,51 @@
           console.log(`GPS attempt ${i + 1} with options:`, attempts[i]);
           locateBtn.textContent = `⏳ Getting location... (${i + 1}/${attempts.length})`;
           
-          position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, attempts[i]);
+          position = await retryWithBackoff(async () => {
+            return new Promise((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, attempts[i]);
+            });
           });
           
           const accuracy = position.coords.accuracy;
           console.log(`GPS attempt ${i + 1} success - accuracy: ${Math.round(accuracy)}m`);
+          
+          // Collect all successful positions for smoothing
+          allPositions.push(position);
           
           // Keep track of the best position we've seen
           if (!bestPosition || accuracy < bestPosition.coords.accuracy) {
             bestPosition = position;
           }
           
-          // If we got good accuracy (under 100m), use it immediately
-          if (accuracy <= 100) {
-            console.log(`Good accuracy achieved (${Math.round(accuracy)}m), using this position`);
+          // If we got good accuracy (under 50m), use it immediately
+          if (accuracy <= 50) {
+            console.log(`Excellent accuracy achieved (${Math.round(accuracy)}m), using this position`);
             position = bestPosition;
             break;
           }
           
-          // If this is the last attempt, use the best position we found
+          // If this is the last attempt, apply location smoothing if we have multiple readings
           if (i === attempts.length - 1) {
-            console.log(`Using best position found with accuracy: ${Math.round(bestPosition.coords.accuracy)}m`);
-            position = bestPosition;
+            if (allPositions.length > 1) {
+              console.log(`Applying location smoothing to ${allPositions.length} readings`);
+              const smoothedPosition = smoothLocationReadings(allPositions);
+              if (smoothedPosition) {
+                position = smoothedPosition;
+                console.log(`Smoothed position - accuracy: ${Math.round(smoothedPosition.coords.accuracy)}m`);
+              } else {
+                position = bestPosition;
+                console.log(`Smoothing failed, using best position with accuracy: ${Math.round(bestPosition.coords.accuracy)}m`);
+              }
+            } else {
+              position = bestPosition;
+              console.log(`Using single position with accuracy: ${Math.round(bestPosition.coords.accuracy)}m`);
+            }
             break;
           }
           
-          // Otherwise continue trying for better accuracy
-          console.log(`Accuracy ${Math.round(accuracy)}m not good enough, trying again...`);
+          // Continue trying for better accuracy
+          console.log(`Accuracy ${Math.round(accuracy)}m acceptable, collecting more readings...`);
           
         } catch (error) {
           console.log(`GPS attempt ${i + 1} failed:`, error.code, error.message);
@@ -4928,25 +5120,42 @@
               break;
             }
             
-            let message;
-            switch(error.code) {
-              case 1: // PERMISSION_DENIED
-                message = 'GPS location failed despite permissions being granted. This may be due to:\n\n• Location services disabled on your device\n• GPS hardware issues\n• Browser security restrictions\n• Running on HTTP instead of HTTPS\n\nTry refreshing the page, checking device location settings, or restarting your browser.';
-                break;
-              case 2: // POSITION_UNAVAILABLE
-                message = 'Your location could not be determined. This may be due to poor GPS signal or location services being disabled on your device.';
-                break;
-              case 3: // TIMEOUT
-                message = 'Location request timed out. Please ensure you have a good GPS signal and try again.';
-                break;
-              default:
-                message = `Location error (${error.code}): ${error.message}`;
-            }
+            // Try enhanced location services as fallback
+            console.log('All GPS attempts failed, trying enhanced location services...');
+            locateBtn.textContent = '⏳ Trying enhanced location services...';
             
-            alert(message + '\n\nYou can enter the address manually in the location field.');
-            locateBtn.textContent = '📍 Locate';
-            locateBtn.disabled = false;
-            return;
+            // Try Google Geolocation API first (if API key available)
+            // Note: You would need to add your Google API key here
+            // const GOOGLE_API_KEY = 'your-api-key-here';
+            
+            try {
+              console.log('Attempting IP geolocation fallback...');
+              position = await getIPLocation();
+              console.log(`IP location acquired - accuracy: ${Math.round(position.coords.accuracy)}m`);
+              break;
+            } catch (ipError) {
+              console.error('IP geolocation failed:', ipError);
+              
+              let message;
+              switch(error.code) {
+                case 1: // PERMISSION_DENIED
+                  message = 'GPS location failed and IP location also failed. This may be due to:\n\n• Location services disabled on your device\n• GPS hardware issues\n• Browser security restrictions\n• Network connectivity issues\n\nTry refreshing the page, checking device location settings, or restarting your browser.';
+                  break;
+                case 2: // POSITION_UNAVAILABLE
+                  message = 'Your location could not be determined through GPS or IP location. This may be due to poor GPS signal and network issues.';
+                  break;
+                case 3: // TIMEOUT
+                  message = 'Location request timed out for both GPS and IP location services. Please ensure you have a good connection and try again.';
+                  break;
+                default:
+                  message = `All location methods failed. GPS error (${error.code}): ${error.message}`;
+              }
+              
+              alert(message + '\n\nYou can enter the address manually in the location field.');
+              locateBtn.textContent = '📍 Locate';
+              locateBtn.disabled = false;
+              return;
+            }
           }
         }
       }
