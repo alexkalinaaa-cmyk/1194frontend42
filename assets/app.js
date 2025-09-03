@@ -430,6 +430,11 @@
     await window.signOut();
   });
   
+  // Instant theme preview on dropdown change
+  on(S.theme,"change",function(){
+    applyTheme(S.theme.value);
+  });
+  
   on(S.save,"click",function(){
     // Save settings (no name/email needed - comes from MSAL)
     const v = { occ: S.occ.value.trim(), phone: S.phone.value.trim(), theme: S.theme.value };
