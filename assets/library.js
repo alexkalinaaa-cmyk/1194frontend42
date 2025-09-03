@@ -2994,11 +2994,18 @@
         const pinColor = itemPins[0].headColor;
         const rgb = hexToRgb(pinColor);
         
-        // Draw small colored circle (pin indicator)
+        // Draw complete pin indicator (shaft + head)
+        
+        // Pin shaft (black line)
+        doc.setDrawColor(0, 0, 0); // Black color
+        doc.setLineWidth(1.5);
+        doc.line(pinX, pinY, pinX, pinY - 8); // 8px shaft length
+        
+        // Pin head (colored circle)
         doc.setFillColor(rgb.r, rgb.g, rgb.b);
         doc.setDrawColor(0, 0, 0); // Black border
         doc.setLineWidth(1);
-        doc.circle(pinX, pinY - 3, 4, 'FD'); // Filled circle with border
+        doc.circle(pinX, pinY - 8, 4, 'FD'); // Filled circle with border at top of shaft
         
         pinIndicatorWidth = 8 + pinSpacing; // Pin diameter + spacing
       }

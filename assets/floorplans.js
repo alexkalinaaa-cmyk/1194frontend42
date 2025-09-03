@@ -792,17 +792,31 @@
         
         // Only draw pins that are visible within the canvas bounds
         if (pinX >= 0 && pinX <= canvasWidth && pinY >= 0 && pinY <= canvasHeight) {
-          // Draw pin circle
+          // Draw complete pin (5x bigger): shaft + head
+          const headRadius = 20; // 5x bigger than original 4px
+          const shaftLength = 60; // Proportional to head size
+          const shaftWidth = 4; // Visible shaft thickness
+          
+          // Draw pin shaft (black line)
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = shaftWidth;
+          ctx.lineCap = 'round';
           ctx.beginPath();
-          ctx.arc(pinX, pinY, 4, 0, 2 * Math.PI);
+          ctx.moveTo(pinX, pinY);
+          ctx.lineTo(pinX, pinY - shaftLength);
+          ctx.stroke();
+          
+          // Draw pin head (colored circle)
+          ctx.beginPath();
+          ctx.arc(pinX, pinY - shaftLength, headRadius, 0, 2 * Math.PI);
           ctx.fillStyle = pin.headColor; // Use the pin's actual assigned color
           ctx.fill();
           
-          // Draw pin border
+          // Draw pin head border
           ctx.beginPath();
-          ctx.arc(pinX, pinY, 4, 0, 2 * Math.PI);
-          ctx.strokeStyle = 'white';
-          ctx.lineWidth = 1;
+          ctx.arc(pinX, pinY - shaftLength, headRadius, 0, 2 * Math.PI);
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
           ctx.stroke();
         }
       });
@@ -2327,7 +2341,7 @@
                 console.log('Floor plan blob URL is still valid:', plan.id);
                 needsRestoration = false;
               } else {
-                console.log('Floor plan blob URL is invalid, needs restoration:', plan.id);
+                // Blob URL is invalid and needs restoration (expected after browser restart)
                 needsRestoration = true;
               }
             } else if (hasOriginalData) {
