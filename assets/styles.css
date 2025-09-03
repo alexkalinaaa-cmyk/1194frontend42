@@ -14,6 +14,54 @@
   --drag: #2563eb;
 }
 
+/* Ocean Blue theme */
+[data-theme="blue"] {
+  --bg: #0c1826;
+  --fg: #e0f2fe;
+  --muted: #90caf9;
+  --panel: #1e3a52;
+  --accent: #03a9f4;
+  --green: #4caf50;
+  --border: #37474f;
+  --drag: #0288d1;
+}
+
+/* Forest Green theme */
+[data-theme="green"] {
+  --bg: #0d1b0d;
+  --fg: #e8f5e8;
+  --muted: #a5d6a7;
+  --panel: #1b2f1b;
+  --accent: #4caf50;
+  --green: #66bb6a;
+  --border: #2e7d2e;
+  --drag: #388e3c;
+}
+
+/* Deep Purple theme */
+[data-theme="purple"] {
+  --bg: #1a0d1a;
+  --fg: #f3e5f5;
+  --muted: #ce93d8;
+  --panel: #2d1b2d;
+  --accent: #9c27b0;
+  --green: #ab47bc;
+  --border: #4a148c;
+  --drag: #7b1fa2;
+}
+
+/* Sunset Orange theme */
+[data-theme="sunset"] {
+  --bg: #1a0f0a;
+  --fg: #ffeaa7;
+  --muted: #fdcb6e;
+  --panel: #2d1b13;
+  --accent: #e17055;
+  --green: #00b894;
+  --border: #6c5ce7;
+  --drag: #fd79a8;
+}
+
 /* Light theme overrides - backgrounds and dark button fixes */
 [data-theme="light"] .app-header {
   background: #f8fafc;

@@ -2851,8 +2851,8 @@
           doc.text(label, leftMargin, optionalYPos);
           const labelWidth = doc.getTextWidth(label);
           
-          // Render value at font size 10
-          doc.setFontSize(10);
+          // Render value at font size 9
+          doc.setFontSize(9);
           doc.text(value, leftMargin + labelWidth, optionalYPos);
         } else {
           // If no colon found, render entire text at font size 11

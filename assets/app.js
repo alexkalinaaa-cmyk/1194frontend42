@@ -384,7 +384,7 @@
 
   // Theme switching functions
   function applyTheme(theme) {
-    const validThemes = ['dark', 'light'];
+    const validThemes = ['dark', 'light', 'blue', 'green', 'purple', 'sunset'];
     const selectedTheme = validThemes.includes(theme) ? theme : 'dark';
     
     if (selectedTheme === 'dark') {
