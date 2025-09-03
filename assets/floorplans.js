@@ -745,18 +745,25 @@
           ctx.fillStyle = '#f8fafc';
           ctx.fillRect(0, 0, width, height);
           
-          // Draw the image
+          // Draw the image first
           ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
           
-          // Draw pins on top of the image
-          await drawPinsOnPreview(ctx, planToUse, drawWidth, drawHeight, offsetX, offsetY, width, height);
-          
-          // Add subtle border
-          ctx.strokeStyle = '#e2e8f0';
-          ctx.lineWidth = 1;
-          ctx.strokeRect(0, 0, width, height);
-          
-          resolve(canvas.toDataURL('image/jpeg', 0.95));
+          // Draw pins on top of the image (non-async)
+          drawPinsOnPreview(ctx, planToUse, drawWidth, drawHeight, offsetX, offsetY, width, height).then(() => {
+            // Add subtle border
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(0, 0, width, height);
+            
+            resolve(canvas.toDataURL('image/jpeg', 0.95));
+          }).catch(() => {
+            // If pin drawing fails, still return the image without pins
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(0, 0, width, height);
+            
+            resolve(canvas.toDataURL('image/jpeg', 0.95));
+          });
         } catch (error) {
           console.warn('Failed to generate floor plan card preview:', error);
           resolve(null);
