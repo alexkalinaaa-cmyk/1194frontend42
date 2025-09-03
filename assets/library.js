@@ -2076,7 +2076,7 @@
   }
 
   // Helper function to truncate PDF filenames for display
-  function truncateFilename(filename, maxLength = 33) {
+  function truncateFilename(filename, maxLength = 38) {
     if (filename.length <= maxLength) return filename;
     const extension = filename.endsWith('.pdf') ? '.pdf' : '';
     const nameWithoutExt = extension ? filename.slice(0, -4) : filename;

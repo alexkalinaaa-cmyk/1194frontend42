@@ -729,15 +729,20 @@
           
           let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
           
+          // Apply 200% zoom (2x scale) for more detail
+          const zoomFactor = 2.0;
+          
           if (imgAspect > canvasAspect) {
-            // Image is wider - fit to height, crop width
-            drawHeight = height;
-            drawWidth = height * imgAspect;
+            // Image is wider - fit to height, crop width, then zoom
+            drawHeight = height * zoomFactor;
+            drawWidth = height * imgAspect * zoomFactor;
             offsetX = -(drawWidth - width) / 2;
+            offsetY = -(drawHeight - height) / 2;
           } else {
-            // Image is taller - fit to width, crop height  
-            drawWidth = width;
-            drawHeight = width / imgAspect;
+            // Image is taller - fit to width, crop height, then zoom
+            drawWidth = width * zoomFactor;
+            drawHeight = width / imgAspect * zoomFactor;
+            offsetX = -(drawWidth - width) / 2;
             offsetY = -(drawHeight - height) / 2;
           }
           
@@ -1281,6 +1286,8 @@
           currentPlanIndex--;
           // Save the current page
           saveLastViewedPage(currentFloorPlanCard.id, currentPlanIndex);
+          // Update previews immediately
+          renderFloorPlanCards();
           updatePlanCounter();
           loadCurrentPlan();
         }
@@ -1294,6 +1301,8 @@
           currentPlanIndex++;
           // Save the current page
           saveLastViewedPage(currentFloorPlanCard.id, currentPlanIndex);
+          // Update previews immediately
+          renderFloorPlanCards();
           updatePlanCounter();
           loadCurrentPlan();
         }
