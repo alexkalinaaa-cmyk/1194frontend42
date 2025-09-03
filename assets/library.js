@@ -2839,7 +2839,27 @@
       optionalData.forEach(data => {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0, 0, 0);
-        doc.text(data, leftMargin, optionalYPos);
+        
+        // Split data into label and value parts based on colon
+        const colonIndex = data.indexOf(':');
+        if (colonIndex !== -1) {
+          const label = data.substring(0, colonIndex + 1); // Include the colon
+          const value = data.substring(colonIndex + 1); // Everything after colon
+          
+          // Render label at font size 11
+          doc.setFontSize(11);
+          doc.text(label, leftMargin, optionalYPos);
+          const labelWidth = doc.getTextWidth(label);
+          
+          // Render value at font size 10
+          doc.setFontSize(10);
+          doc.text(value, leftMargin + labelWidth, optionalYPos);
+        } else {
+          // If no colon found, render entire text at font size 11
+          doc.setFontSize(11);
+          doc.text(data, leftMargin, optionalYPos);
+        }
+        
         optionalYPos += 20;
       });
     }
@@ -2860,17 +2880,6 @@
     doc.text(`: ${jid}`, leftMargin + reportIdWidth, mandatoryYPos);
     mandatoryYPos += 20;
     
-    // Job Name - Red, bold, underlined (except colon)
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(220, 38, 38); // Red color
-    doc.text('Job Name', leftMargin, mandatoryYPos);
-    const jobNameWidth = doc.getTextWidth('Job Name');
-    doc.line(leftMargin, mandatoryYPos + 2, leftMargin + jobNameWidth, mandatoryYPos + 2); // Underline
-    doc.setTextColor(0, 0, 0); // Black for colon and data
-    doc.setFont('helvetica', 'normal');
-    doc.text(`: ${jobName}`, leftMargin + jobNameWidth, mandatoryYPos);
-    mandatoryYPos += 20;
-    
     // Job Code - Red, bold, underlined (except colon) - only if provided
     if (jobCode) {
       doc.setFont('helvetica', 'bold');
@@ -2883,6 +2892,17 @@
       doc.text(`: ${jobCode}`, leftMargin + jobCodeWidth, mandatoryYPos);
       mandatoryYPos += 20;
     }
+    
+    // Job Name - Red, bold, underlined (except colon)
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(220, 38, 38); // Red color
+    doc.text('Job Name', leftMargin, mandatoryYPos);
+    const jobNameWidth = doc.getTextWidth('Job Name');
+    doc.line(leftMargin, mandatoryYPos + 2, leftMargin + jobNameWidth, mandatoryYPos + 2); // Underline
+    doc.setTextColor(0, 0, 0); // Black for colon and data
+    doc.setFont('helvetica', 'normal');
+    doc.text(`: ${jobName}`, leftMargin + jobNameWidth, mandatoryYPos);
+    mandatoryYPos += 20;
     
     // Generated - Normal text (no bold)
     doc.setTextColor(0, 0, 0);
