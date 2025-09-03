@@ -701,12 +701,15 @@
     
     // Use the first plan for the preview
     const firstPlan = floorPlan.plans[0];
-    if (!firstPlan.imageUrl) {
-      console.log('No imageUrl found for first plan:', firstPlan);
+    
+    // Use same image source logic as loadFloorPlanImage
+    const imageSource = firstPlan.blobUrl || getBlobUrl(firstPlan.blobId) || firstPlan.src || firstPlan.originalSrc;
+    if (!imageSource) {
+      console.log('No image source found for first plan:', firstPlan);
       return null;
     }
     
-    console.log('Generating preview from imageUrl:', firstPlan.imageUrl.substring(0, 50) + '...');
+    console.log('Generating preview from image source:', imageSource.substring(0, 50) + '...');
     
     return new Promise((resolve) => {
       const img = new Image();
@@ -756,7 +759,7 @@
         }
       };
       img.onerror = () => resolve(null);
-      img.src = firstPlan.imageUrl;
+      img.src = imageSource;
     });
   }
   
@@ -2332,11 +2335,13 @@
     if (!floorPlanCard || !floorPlanCard.plans || !floorPlanCard.plans[planIndex]) return;
     
     const plan = floorPlanCard.plans[planIndex];
+    // Use same image source logic as loadFloorPlanImage
+    const imageSource = plan.blobUrl || getBlobUrl(plan.blobId) || plan.src || plan.originalSrc;
     lastViewedFloorPlan = {
       floorPlanCardId: floorPlanCard.id,
       planId: plan.id,
       planIndex: planIndex,
-      imageUrl: plan.imageUrl,
+      imageUrl: imageSource,
       timestamp: Date.now()
     };
     
