@@ -844,7 +844,21 @@
       if (window.IndexedStorage && window.IndexedStorage.Storage) {
         const result = await window.IndexedStorage.Storage.getItem(k);
         if (result && result !== "null" && result !== "undefined") {
-          return JSON.parse(result);
+          // Handle corrupted JSON data
+          try {
+            return JSON.parse(result);
+          } catch (parseError) {
+            console.warn(`Corrupted JSON data for ${k}:`, result, parseError);
+            // If it's a simple string without quotes, treat as plain text
+            if (typeof result === 'string' && !result.startsWith('{') && !result.startsWith('[') && !result.startsWith('"')) {
+              console.log(`Treating ${k} as plain text:`, result);
+              return result;
+            }
+            // Clear corrupted data and return default
+            console.log(`Clearing corrupted data for ${k}`);
+            await window.IndexedStorage.Storage.removeItem(k);
+            return d;
+          }
         }
       }
       
@@ -859,7 +873,23 @@
   const readAsync = async (k, d) => {
     try {
       const result = await window.IndexedStorage.Storage.getItem(k);
-      return result ? JSON.parse(result) : d;
+      if (result) {
+        try {
+          return JSON.parse(result);
+        } catch (parseError) {
+          console.warn(`Corrupted JSON data for ${k}:`, result, parseError);
+          // If it's a simple string without quotes, treat as plain text
+          if (typeof result === 'string' && !result.startsWith('{') && !result.startsWith('[') && !result.startsWith('"')) {
+            console.log(`Treating ${k} as plain text:`, result);
+            return result;
+          }
+          // Clear corrupted data and return default
+          console.log(`Clearing corrupted data for ${k}`);
+          await window.IndexedStorage.Storage.removeItem(k);
+          return d;
+        }
+      }
+      return d;
     } catch (_) {
       return d;
     }
