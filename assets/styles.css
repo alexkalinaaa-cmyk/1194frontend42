@@ -52,14 +52,14 @@
 
 /* Sunset Orange theme */
 [data-theme="sunset"] {
-  --bg: #1a0f0a;
-  --fg: #ffeaa7;
-  --muted: #fdcb6e;
-  --panel: #2d1b13;
-  --accent: #e17055;
-  --green: #00b894;
-  --border: #6c5ce7;
-  --drag: #fd79a8;
+  --bg: #2d1810;
+  --fg: #fff3cd;
+  --muted: #ffb347;
+  --panel: #4a2c17;
+  --accent: #ff6b35;
+  --green: #ff8c42;
+  --border: #d2691e;
+  --drag: #ff4500;
 }
 
 /* Light theme overrides - backgrounds and dark button fixes */
@@ -143,6 +143,81 @@
   background: #ffffff;
   color: #1f2937;
   border-color: var(--accent);
+}
+
+/* Fix dashed toggle visibility in light theme */
+[data-theme="light"] #dashed-toggle.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+/* Forest Green theme - Brown header like tree trunk */
+[data-theme="green"] .app-header {
+  background: #4a3728;
+  border-bottom-color: #5d4037;
+}
+
+/* Deep Purple theme - Enhanced purple elements */
+[data-theme="purple"] .app-header {
+  background: #4a148c;
+  border-bottom-color: #6a1b9a;
+}
+
+[data-theme="purple"] #btn-notes {
+  background: #8e24aa;
+  color: white;
+  border-color: #8e24aa;
+}
+
+[data-theme="purple"] #btn-notes:hover {
+  background: #7b1fa2;
+  border-color: #7b1fa2;
+}
+
+[data-theme="purple"] #btn-locate {
+  background: #8e24aa;
+  color: white;
+  border-color: #8e24aa;
+}
+
+[data-theme="purple"] #btn-locate:hover {
+  background: #7b1fa2;
+  border-color: #7b1fa2;
+}
+
+[data-theme="purple"] .floorplans-archivum-sheet,
+[data-theme="purple"] .floorplans-archivum-content {
+  background: #3d1a78;
+  border-color: #6a1b9a;
+}
+
+/* Sunset Orange theme - Enhanced sunset elements */
+[data-theme="sunset"] .app-header {
+  background: #cc5500;
+  border-bottom-color: #ff6b35;
+}
+
+[data-theme="sunset"] #btn-notes {
+  background: #ff6b35;
+  color: white;
+  border-color: #ff6b35;
+}
+
+[data-theme="sunset"] #btn-notes:hover {
+  background: #ff4500;
+  border-color: #ff4500;
+}
+
+[data-theme="sunset"] #btn-locate {
+  background: #ff6b35;
+  color: white;
+  border-color: #ff6b35;
+}
+
+[data-theme="sunset"] #btn-locate:hover {
+  background: #ff4500;
+  border-color: #ff4500;
 }
 * { box-sizing:border-box; }
 html,body { 
