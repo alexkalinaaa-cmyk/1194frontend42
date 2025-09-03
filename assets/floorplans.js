@@ -699,13 +699,14 @@
       return null;
     }
     
-    // Use the first plan for the preview
-    const firstPlan = floorPlan.plans[0];
+    // Use the most recently viewed plan, or first plan as fallback
+    const lastPageIndex = getLastViewedPageIndex(floorPlan.id);
+    const planToUse = floorPlan.plans[lastPageIndex] || floorPlan.plans[0];
     
     // Use same image source logic as loadFloorPlanImage
-    const imageSource = firstPlan.blobUrl || getBlobUrl(firstPlan.blobId) || firstPlan.src || firstPlan.originalSrc;
+    const imageSource = planToUse.blobUrl || getBlobUrl(planToUse.blobId) || planToUse.src || planToUse.originalSrc;
     if (!imageSource) {
-      console.log('No image source found for first plan:', firstPlan);
+      console.log('No image source found for plan:', planToUse);
       return null;
     }
     
@@ -747,6 +748,9 @@
           // Draw the image
           ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
           
+          // Draw pins on top of the image
+          await drawPinsOnPreview(ctx, planToUse, drawWidth, drawHeight, offsetX, offsetY, width, height);
+          
           // Add subtle border
           ctx.strokeStyle = '#e2e8f0';
           ctx.lineWidth = 1;
@@ -761,6 +765,65 @@
       img.onerror = () => resolve(null);
       img.src = imageSource;
     });
+  }
+
+  // Draw pins on preview canvas
+  async function drawPinsOnPreview(ctx, plan, imageWidth, imageHeight, imageOffsetX, imageOffsetY, canvasWidth, canvasHeight) {
+    try {
+      const pins = await getPinsForPlan(plan.id);
+      if (pins.length === 0) return;
+
+      pins.forEach(pin => {
+        // Convert pin coordinates (0-1) to canvas coordinates
+        const pinX = imageOffsetX + (pin.x * imageWidth);
+        const pinY = imageOffsetY + (pin.y * imageHeight);
+        
+        // Only draw pins that are visible within the canvas bounds
+        if (pinX >= 0 && pinX <= canvasWidth && pinY >= 0 && pinY <= canvasHeight) {
+          // Draw pin circle
+          ctx.beginPath();
+          ctx.arc(pinX, pinY, 4, 0, 2 * Math.PI);
+          ctx.fillStyle = pin.cardId ? '#22c55e' : '#ef4444'; // Green if linked, red if unlinked
+          ctx.fill();
+          
+          // Draw pin border
+          ctx.beginPath();
+          ctx.arc(pinX, pinY, 4, 0, 2 * Math.PI);
+          ctx.strokeStyle = 'white';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to draw pins on preview:', error);
+    }
+  }
+
+  // Last viewed page persistence
+  const LAST_PAGE_KEY = 'JL_floor_plan_last_pages';
+
+  function getLastViewedPageIndex(floorPlanId) {
+    try {
+      const saved = localStorage.getItem(LAST_PAGE_KEY);
+      if (saved) {
+        const lastPages = JSON.parse(saved);
+        return lastPages[floorPlanId] || 0;
+      }
+    } catch (error) {
+      console.warn('Failed to load last viewed page:', error);
+    }
+    return 0;
+  }
+
+  function saveLastViewedPage(floorPlanId, pageIndex) {
+    try {
+      const saved = localStorage.getItem(LAST_PAGE_KEY);
+      const lastPages = saved ? JSON.parse(saved) : {};
+      lastPages[floorPlanId] = pageIndex;
+      localStorage.setItem(LAST_PAGE_KEY, JSON.stringify(lastPages));
+    } catch (error) {
+      console.warn('Failed to save last viewed page:', error);
+    }
   }
   
   // UI Rendering Functions
@@ -797,14 +860,12 @@
       
       // Initial HTML with placeholder
       floorPlanCard.innerHTML = `
-        <div class="floorplan-card-header">
-          <div class="floorplan-card-title" title="${floorPlan.filename}">${truncateFilename(floorPlan.filename)}</div>
-          <div class="floorplan-card-badge">${plansCount} plans</div>
-        </div>
-        <div class="floorplan-card-meta">${pinsCount} pins</div>
         <div class="floorplan-card-preview" id="preview-${floorPlan.id}">
-          ${plansCount > 0 ? '<div style="font-size:12px; padding: 8px; color: #64748b;">Generating preview...</div>' : '<div style="font-size:12px; padding: 8px; color: #64748b;">Processing...</div>'}
+          ${plansCount > 0 ? '<div style="font-size:10px; padding: 8px; color: #64748b;">Generating preview...</div>' : '<div style="font-size:10px; padding: 8px; color: #64748b;">Processing...</div>'}
         </div>
+        <div class="floorplan-card-title" title="${floorPlan.filename}">${truncateFilename(floorPlan.filename, 18)}</div>
+        <div class="floorplan-card-meta">${pinsCount} pins</div>
+        <div class="floorplan-card-badge">${plansCount}</div>
         <button class="floorplan-card-delete" title="Delete Floor Plan">×</button>
       `;
       
@@ -817,10 +878,10 @@
           const previewElement = document.getElementById(`preview-${floorPlan.id}`);
           if (previewElement && previewUrl) {
             console.log('Updating preview element with image');
-            previewElement.innerHTML = `<img src="${previewUrl}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px;" alt="Floor plan preview">`;
+            previewElement.innerHTML = `<img src="${previewUrl}" alt="Floor plan preview">`;
           } else if (previewElement) {
             console.log('Preview generated but no URL, showing fallback text');
-            previewElement.innerHTML = '<div style="font-size:12px; padding: 8px; color: #64748b;">Click to view plans</div>';
+            previewElement.innerHTML = '<div style="font-size:10px; padding: 4px; color: #64748b;">Click to view plans</div>';
           } else {
             console.warn('Preview element not found:', `preview-${floorPlan.id}`);
           }
@@ -828,7 +889,7 @@
           console.error('Failed to generate preview for floor plan:', floorPlan.id, error);
           const previewElement = document.getElementById(`preview-${floorPlan.id}`);
           if (previewElement) {
-            previewElement.innerHTML = '<div style="font-size:12px; padding: 8px; color: #64748b;">Click to view plans</div>';
+            previewElement.innerHTML = '<div style="font-size:10px; padding: 4px; color: #64748b;">Click to view plans</div>';
           }
         });
       }
@@ -958,7 +1019,12 @@
     }
     
     currentFloorPlanCard = floorPlanCard;
-    currentPlanIndex = 0;
+    // Restore last viewed page or default to first page
+    currentPlanIndex = getLastViewedPageIndex(floorPlanCardId);
+    // Ensure the index is valid
+    if (currentPlanIndex >= floorPlanCard.plans.length) {
+      currentPlanIndex = 0;
+    }
     currentTool = 'pan';
     
     // Show viewer modal
@@ -1206,6 +1272,8 @@
         if (currentPlanIndex > 0) {
           hidePinPopover(true); // Close popover when changing plans
           currentPlanIndex--;
+          // Save the current page
+          saveLastViewedPage(currentFloorPlanCard.id, currentPlanIndex);
           updatePlanCounter();
           loadCurrentPlan();
         }
@@ -1217,6 +1285,8 @@
         if (currentFloorPlanCard && currentPlanIndex < currentFloorPlanCard.plans.length - 1) {
           hidePinPopover(true); // Close popover when changing plans
           currentPlanIndex++;
+          // Save the current page
+          saveLastViewedPage(currentFloorPlanCard.id, currentPlanIndex);
           updatePlanCounter();
           loadCurrentPlan();
         }
