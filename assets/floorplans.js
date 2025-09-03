@@ -691,7 +691,7 @@
   }
   
   // Floor Plan Card Thumbnail Generation
-  async function generateFloorPlanCardPreview(floorPlan, width = 150, height = 100) {
+  async function generateFloorPlanCardPreview(floorPlan, width = 300, height = 200) {
     console.log('generateFloorPlanCardPreview called for:', floorPlan.id);
     
     if (!floorPlan.plans || floorPlan.plans.length === 0) {
@@ -752,7 +752,7 @@
           ctx.lineWidth = 1;
           ctx.strokeRect(0, 0, width, height);
           
-          resolve(canvas.toDataURL('image/jpeg', 0.8));
+          resolve(canvas.toDataURL('image/jpeg', 0.95));
         } catch (error) {
           console.warn('Failed to generate floor plan card preview:', error);
           resolve(null);
@@ -811,7 +811,6 @@
       // Generate and update preview asynchronously (don't block UI)
       if (plansCount > 0) {
         console.log('Starting preview generation for floor plan:', floorPlan.id, 'with', plansCount, 'plans');
-        console.log('First plan imageUrl:', floorPlan.plans[0]?.imageUrl);
         
         generateFloorPlanCardPreview(floorPlan).then(previewUrl => {
           console.log('Preview generated for:', floorPlan.id, 'URL length:', previewUrl ? previewUrl.length : 'null');
@@ -1015,8 +1014,6 @@
     const canvas = $('#floor-canvas');
     const ctx = canvas.getContext('2d');
     
-    // Track this as the last viewed floor plan for button preview
-    trackLastViewedFloorPlan(currentFloorPlanCard, currentPlanIndex);
     
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2188,6 +2185,7 @@
       return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => resolve(true);
+        // Suppress console errors for expected blob URL failures during testing
         img.onerror = () => resolve(false);
         img.src = blobUrl;
         // Timeout after 1 second
@@ -2323,113 +2321,8 @@
     // Initial render
     renderFloorPlanCards();
     
-    // Load last viewed floor plan for button preview
-    loadLastViewedFloorPlan();
   }
   
-  // Floor Plan Button Preview Functionality
-  let lastViewedFloorPlan = null;
-  const BUTTON_PREVIEW_KEY = "JL_floorplan_button_preview";
-  
-  function trackLastViewedFloorPlan(floorPlanCard, planIndex = 0) {
-    if (!floorPlanCard || !floorPlanCard.plans || !floorPlanCard.plans[planIndex]) return;
-    
-    const plan = floorPlanCard.plans[planIndex];
-    // Use same image source logic as loadFloorPlanImage
-    const imageSource = plan.blobUrl || getBlobUrl(plan.blobId) || plan.src || plan.originalSrc;
-    lastViewedFloorPlan = {
-      floorPlanCardId: floorPlanCard.id,
-      planId: plan.id,
-      planIndex: planIndex,
-      imageUrl: imageSource,
-      timestamp: Date.now()
-    };
-    
-    // Save to storage for persistence across sessions
-    localStorage.setItem(BUTTON_PREVIEW_KEY, JSON.stringify(lastViewedFloorPlan));
-    
-    // Update button preview
-    updateFloorPlanButtonPreview();
-  }
-  
-  async function generatePreviewImage(imageUrl, size = 40) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Square preview with proper aspect ratio
-        canvas.width = size;
-        canvas.height = size;
-        
-        // Calculate dimensions to fit image in square while maintaining aspect ratio
-        const { width: imgWidth, height: imgHeight } = img;
-        const aspectRatio = imgWidth / imgHeight;
-        
-        let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
-        
-        if (aspectRatio > 1) {
-          // Wider than tall
-          drawHeight = size;
-          drawWidth = size * aspectRatio;
-          offsetX = -(drawWidth - size) / 2;
-        } else {
-          // Taller than wide or square
-          drawWidth = size;
-          drawHeight = size / aspectRatio;
-          offsetY = -(drawHeight - size) / 2;
-        }
-        
-        ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-        resolve(canvas.toDataURL('image/jpeg', 0.8));
-      };
-      img.onerror = () => resolve(null);
-      img.src = imageUrl;
-    });
-  }
-  
-  async function updateFloorPlanButtonPreview() {
-    const button = document.getElementById('btn-floorplans');
-    if (!button || !lastViewedFloorPlan) {
-      // Reset button to text only
-      if (button) {
-        button.innerHTML = 'Floor Plans/Archivum';
-        button.style.backgroundImage = '';
-        button.style.backgroundSize = '';
-        button.style.backgroundPosition = '';
-        button.style.paddingLeft = '';
-      }
-      return;
-    }
-    
-    try {
-      const previewUrl = await generatePreviewImage(lastViewedFloorPlan.imageUrl, 32);
-      if (previewUrl) {
-        button.innerHTML = `<span style="margin-left: 40px;">Floor Plans</span>`;
-        button.style.backgroundImage = `url(${previewUrl})`;
-        button.style.backgroundSize = '32px 32px';
-        button.style.backgroundPosition = '8px center';
-        button.style.backgroundRepeat = 'no-repeat';
-        button.style.paddingLeft = '48px';
-      }
-    } catch (error) {
-      console.warn('Failed to generate floor plan button preview:', error);
-    }
-  }
-  
-  function loadLastViewedFloorPlan() {
-    try {
-      const saved = localStorage.getItem(BUTTON_PREVIEW_KEY);
-      if (saved) {
-        lastViewedFloorPlan = JSON.parse(saved);
-        updateFloorPlanButtonPreview();
-      }
-    } catch (error) {
-      console.warn('Failed to load last viewed floor plan:', error);
-    }
-  }
   
   // Global exports for integration with existing system
   window.FloorPlans = {
@@ -2450,8 +2343,6 @@
     restoreBlobUrls,
     getBlobUrl,
     isLinkingActive: () => isLinkingActive,
-    trackLastViewedFloorPlan,
-    loadLastViewedFloorPlan
   };
   
   // Initialize when DOM is ready

@@ -848,10 +848,10 @@
           try {
             return JSON.parse(result);
           } catch (parseError) {
-            console.warn(`Corrupted JSON data for ${k}:`, result, parseError);
+            // Note: Some data is stored as plain text, not JSON - this is expected
             // If it's a simple string without quotes, treat as plain text
             if (typeof result === 'string' && !result.startsWith('{') && !result.startsWith('[') && !result.startsWith('"')) {
-              console.log(`Treating ${k} as plain text:`, result);
+              // Treating as plain text (expected for some fields)
               return result;
             }
             // Clear corrupted data and return default
