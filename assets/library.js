@@ -2994,20 +2994,20 @@
         const pinColor = itemPins[0].headColor;
         const rgb = hexToRgb(pinColor);
         
-        // Draw complete pin indicator (shaft + head)
+        // Draw complete pin indicator (shaft + head) - match floor plan pin proportions
         
-        // Pin shaft (black line)
+        // Pin shaft (black line) - match floor plan pin dimensions
         doc.setDrawColor(0, 0, 0); // Black color
-        doc.setLineWidth(1.5);
-        doc.line(pinX, pinY, pinX, pinY - 8); // 8px shaft length
+        doc.setLineWidth(2.5); // Scale from floor plan's 4px to ~2.5px for text context
+        doc.line(pinX, pinY, pinX, pinY - 18); // Scale from floor plan's 37px to ~18px
         
-        // Pin head (colored circle)
+        // Pin head (colored circle) - match floor plan pin dimensions  
         doc.setFillColor(rgb.r, rgb.g, rgb.b);
         doc.setDrawColor(0, 0, 0); // Black border
-        doc.setLineWidth(1);
-        doc.circle(pinX, pinY - 8, 4, 'FD'); // Filled circle with border at top of shaft
+        doc.setLineWidth(1.5); // Scale from floor plan's 3px to ~1.5px
+        doc.circle(pinX, pinY - 18, 7.5, 'FD'); // Scale from floor plan's 15px to ~7.5px radius
         
-        pinIndicatorWidth = 8 + pinSpacing; // Pin diameter + spacing
+        pinIndicatorWidth = 15 + pinSpacing; // Pin diameter (7.5 radius * 2) + spacing
       }
       
       // Red underline ONLY for "ITEM X" (exclude the period and pin) - consistent with other headers

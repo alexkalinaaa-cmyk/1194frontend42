@@ -792,12 +792,12 @@
         
         // Only draw pins that are visible within the canvas bounds
         if (pinX >= 0 && pinX <= canvasWidth && pinY >= 0 && pinY <= canvasHeight) {
-          // Draw complete pin (5x bigger): shaft + head
-          const headRadius = 20; // 5x bigger than original 4px
-          const shaftLength = 60; // Proportional to head size
-          const shaftWidth = 4; // Visible shaft thickness
+          // Draw complete pin matching PDF screenshot style
+          const headRadius = 15; // Match PDF pin head size (15px radius)
+          const shaftLength = 37; // Match PDF pin shaft length (37px)  
+          const shaftWidth = 4; // Match PDF pin shaft width (4px)
           
-          // Draw pin shaft (black line)
+          // Draw pin shaft (black line) - match PDF style
           ctx.strokeStyle = '#000';
           ctx.lineWidth = shaftWidth;
           ctx.lineCap = 'round';
@@ -806,17 +806,17 @@
           ctx.lineTo(pinX, pinY - shaftLength);
           ctx.stroke();
           
-          // Draw pin head (colored circle)
+          // Draw pin head (colored circle) - match PDF style
           ctx.beginPath();
           ctx.arc(pinX, pinY - shaftLength, headRadius, 0, 2 * Math.PI);
           ctx.fillStyle = pin.headColor; // Use the pin's actual assigned color
           ctx.fill();
           
-          // Draw pin head border
+          // Draw pin head border - match PDF style
           ctx.beginPath();
           ctx.arc(pinX, pinY - shaftLength, headRadius, 0, 2 * Math.PI);
           ctx.strokeStyle = '#000';
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 3; // Match PDF pin border width (3px)
           ctx.stroke();
         }
       });
@@ -2349,9 +2349,7 @@
             }
             
             if (needsRestoration) {
-              console.log('Restoring blob URL for plan:', plan.id);
-              
-              // Try to restore from originalSrc first
+              // Quietly restore blob URL
               if (plan.originalSrc) {
                 const blobData = createBlobUrl(plan.originalSrc);
                 if (blobData) {
@@ -2359,7 +2357,6 @@
                   plan.blobId = blobData.blobId;
                   hasUpdates = true;
                   restoredCount++;
-                  console.log('Successfully restored blob URL for plan:', plan.id);
                 } else {
                   console.warn('Failed to create blob URL, using fallback for plan:', plan.id);
                   // Fallback: use originalSrc directly if blob creation fails
@@ -2371,7 +2368,6 @@
                 }
               } else if (plan.src && plan.src.startsWith('data:')) {
                 // Fallback to src field if originalSrc is missing
-                console.log('Using src as fallback for plan:', plan.id);
                 plan.blobUrl = plan.src;
                 fallbackCount++;
                 hasUpdates = true;
