@@ -692,15 +692,21 @@
   
   // Floor Plan Card Thumbnail Generation
   async function generateFloorPlanCardPreview(floorPlan, width = 150, height = 100) {
+    console.log('generateFloorPlanCardPreview called for:', floorPlan.id);
+    
     if (!floorPlan.plans || floorPlan.plans.length === 0) {
+      console.log('No plans found for floor plan:', floorPlan.id);
       return null;
     }
     
     // Use the first plan for the preview
     const firstPlan = floorPlan.plans[0];
     if (!firstPlan.imageUrl) {
+      console.log('No imageUrl found for first plan:', firstPlan);
       return null;
     }
+    
+    console.log('Generating preview from imageUrl:', firstPlan.imageUrl.substring(0, 50) + '...');
     
     return new Promise((resolve) => {
       const img = new Image();
@@ -801,15 +807,23 @@
       
       // Generate and update preview asynchronously (don't block UI)
       if (plansCount > 0) {
+        console.log('Starting preview generation for floor plan:', floorPlan.id, 'with', plansCount, 'plans');
+        console.log('First plan imageUrl:', floorPlan.plans[0]?.imageUrl);
+        
         generateFloorPlanCardPreview(floorPlan).then(previewUrl => {
+          console.log('Preview generated for:', floorPlan.id, 'URL length:', previewUrl ? previewUrl.length : 'null');
           const previewElement = document.getElementById(`preview-${floorPlan.id}`);
           if (previewElement && previewUrl) {
+            console.log('Updating preview element with image');
             previewElement.innerHTML = `<img src="${previewUrl}" style="width: 100%; height: 80px; object-fit: cover; border-radius: 4px;" alt="Floor plan preview">`;
           } else if (previewElement) {
+            console.log('Preview generated but no URL, showing fallback text');
             previewElement.innerHTML = '<div style="font-size:12px; padding: 8px; color: #64748b;">Click to view plans</div>';
+          } else {
+            console.warn('Preview element not found:', `preview-${floorPlan.id}`);
           }
         }).catch(error => {
-          console.warn('Failed to generate preview for floor plan:', floorPlan.id, error);
+          console.error('Failed to generate preview for floor plan:', floorPlan.id, error);
           const previewElement = document.getElementById(`preview-${floorPlan.id}`);
           if (previewElement) {
             previewElement.innerHTML = '<div style="font-size:12px; padding: 8px; color: #64748b;">Click to view plans</div>';
