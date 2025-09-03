@@ -729,8 +729,8 @@
           
           let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
           
-          // Apply 200% zoom (2x scale) for more detail
-          const zoomFactor = 2.0;
+          // Apply 275% zoom (2.75x scale) for more detail
+          const zoomFactor = 2.75;
           
           if (imgAspect > canvasAspect) {
             // Image is wider - fit to height, crop width, then zoom
@@ -795,7 +795,7 @@
           // Draw pin circle
           ctx.beginPath();
           ctx.arc(pinX, pinY, 4, 0, 2 * Math.PI);
-          ctx.fillStyle = pin.cardId ? '#22c55e' : '#ef4444'; // Green if linked, red if unlinked
+          ctx.fillStyle = pin.headColor; // Use the pin's actual assigned color
           ctx.fill();
           
           // Draw pin border
@@ -1224,6 +1224,8 @@
         await deletePin(pin.id);
         renderPins();
         await renderCardTray();
+        // Update floor plan card previews to remove deleted pin
+        renderFloorPlanCards();
         return;
       }
       
@@ -1636,6 +1638,9 @@
     // Render pins immediately (synchronously) - don't await to prevent timing issues
     renderPins();
     
+    // Update floor plan card previews to show new pin
+    renderFloorPlanCards();
+    
     // CLEAR STATE: Set up for card selection
     viewerState.isPlacingPin = true;
     viewerState.selectedUnlinkedPin = null; // Clear any previous selection
@@ -1963,6 +1968,9 @@
       // Re-render pins to show updated link status (non-blocking)
       renderPins();
       
+      // Update floor plan card previews to show pin link status change
+      renderFloorPlanCards();
+      
       // Keep pin selected for continued interaction (don't clear selection)
       // This allows for easy replacement workflow
       
@@ -2186,6 +2194,9 @@
         unlinkBtn.addEventListener('click', async (event) => {
           await unlinkPin(pin.id);
           
+          // Update floor plan card previews to show unlinked pin
+          renderFloorPlanCards();
+          
           // Set pin as selected for immediate re-linking
           viewerState.selectedUnlinkedPin = pin.id;
           viewerState.isPlacingPin = false;
@@ -2224,6 +2235,8 @@
           hidePinPopover(true); // Close popover since pin is deleted
           renderPins(); // Non-blocking for better responsiveness
           renderCardTray(); // Non-blocking for better responsiveness
+          // Update floor plan card previews to remove deleted pin
+          renderFloorPlanCards();
         });
       }
     }
