@@ -433,6 +433,17 @@
   // Instant theme preview on dropdown change
   on(S.theme,"change",function(){
     applyTheme(S.theme.value);
+    
+    // Auto-save theme immediately
+    if (window.IndexedStorage && window.IndexedStorage.Storage) {
+      window.IndexedStorage.Storage.getItem(KSET).then(result => {
+        try {
+          const currentSettings = JSON.parse(result || "{}");
+          currentSettings.theme = S.theme.value;
+          window.IndexedStorage.Storage.setItem(KSET, JSON.stringify(currentSettings));
+        } catch(_) {}
+      }).catch(_=>{});
+    }
   });
   
   on(S.save,"click",function(){
