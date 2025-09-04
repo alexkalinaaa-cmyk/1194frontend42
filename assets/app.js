@@ -2009,47 +2009,241 @@ window.addEventListener('resize', function(){ if(!editor.hasAttribute('hidden'))
     console.log(`[iPhone] Viewport: ${window.innerWidth}x${window.innerHeight}, Screen: ${window.screen.width}x${window.screen.height}`);
   }
   
-  // Sync iPhone location elements with original functionality
+  // Setup iPhone controls functionality with per-report-ID storage
   function setupiPhoneLocationSync() {
+    // Get all original elements
+    const originalJobName = $("#job-name");
+    const originalJobCode = $("#job-code");
     const originalLocationField = $("#location-field");
-    const iPhoneLocationField = $("#location-field-iphone");
     const originalLocateBtn = $("#locate-btn");
+    const originalStorageText = $("#storage-text");
+    const originalStorageFill = $("#storage-fill");
+    
+    // Get all iPhone elements
+    const iPhoneJobName = $("#job-name-iphone");
+    const iPhoneJobCode = $("#job-code-iphone");
+    const iPhoneLocationField = $("#location-field-iphone");
     const iPhoneLocateBtn = $("#locate-btn-iphone");
+    const iPhoneStorageText = $("#storage-text-iphone");
+    const iPhoneStorageFill = $("#storage-fill-iphone");
     
     if (!originalLocationField || !iPhoneLocationField || !originalLocateBtn || !iPhoneLocateBtn) {
-      console.warn('[iPhone] Location elements not found for sync');
+      console.warn('[iPhone] Location elements not found for setup');
       return;
     }
     
-    // Sync input values bidirectionally
-    function syncToOriginal() {
+    // Sync values from original to iPhone controls
+    function synciPhoneControls() {
+      if (iPhoneJobName && originalJobName) {
+        iPhoneJobName.value = originalJobName.value;
+      }
+      if (iPhoneJobCode && originalJobCode) {
+        iPhoneJobCode.value = originalJobCode.value;
+      }
+      if (iPhoneLocationField && originalLocationField) {
+        iPhoneLocationField.value = originalLocationField.value;
+      }
+      if (iPhoneStorageText && originalStorageText) {
+        iPhoneStorageText.textContent = originalStorageText.textContent;
+      }
+      if (iPhoneStorageFill && originalStorageFill) {
+        iPhoneStorageFill.style.width = originalStorageFill.style.width;
+        iPhoneStorageFill.className = originalStorageFill.className;
+      }
+    }
+    
+    // Setup iPhone job name input
+    if (iPhoneJobName && originalJobName) {
+      iPhoneJobName.addEventListener('input', function() {
+        originalJobName.value = iPhoneJobName.value;
+        originalJobName.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    }
+    
+    // Setup iPhone job code input  
+    if (iPhoneJobCode && originalJobCode) {
+      iPhoneJobCode.addEventListener('input', function() {
+        originalJobCode.value = iPhoneJobCode.value;
+        originalJobCode.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    }
+    
+    // Setup iPhone location input to use the same per-report-ID system
+    iPhoneLocationField.addEventListener('input', async function() {
+      // Use the same logic as library.js for per-report-ID location saving
+      if (window.Library && typeof window.Library.getCur === 'function') {
+        const currentReportId = window.Library.getCur();
+        if (currentReportId && window.Library.saveLocation) {
+          await window.Library.saveLocation(currentReportId, iPhoneLocationField.value);
+          console.log('[iPhone] Saved location for report:', currentReportId);
+        }
+      }
+      
+      // Also update the original field to keep UI in sync
       originalLocationField.value = iPhoneLocationField.value;
-      // Trigger any existing change events on original field
-      originalLocationField.dispatchEvent(new Event('input', { bubbles: true }));
-      originalLocationField.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    
-    function syncToiPhone() {
-      iPhoneLocationField.value = originalLocationField.value;
-    }
-    
-    // Set up bidirectional sync
-    iPhoneLocationField.addEventListener('input', syncToOriginal);
-    iPhoneLocationField.addEventListener('change', syncToOriginal);
-    originalLocationField.addEventListener('input', syncToiPhone);
-    originalLocationField.addEventListener('change', syncToiPhone);
-    
-    // Sync iPhone locate button to original locate button functionality
-    iPhoneLocateBtn.addEventListener('click', function(e) {
-      e.preventDefault();
-      console.log('[iPhone] iPhone locate button clicked, triggering original');
-      originalLocateBtn.click();
     });
     
-    // Initial sync
-    syncToiPhone();
+    // Setup iPhone locate button with full geolocation functionality
+    iPhoneLocateBtn.addEventListener('click', async function() {
+      console.log('[iPhone] iPhone locate button clicked');
+      
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by this browser.');
+        return;
+      }
+      
+      // Disable button and show loading state
+      iPhoneLocateBtn.disabled = true;
+      iPhoneLocateBtn.textContent = '⏳';
+      
+      try {
+        // Check geolocation permission first
+        if ('permissions' in navigator) {
+          const permission = await navigator.permissions.query({name: 'geolocation'});
+          console.log('[iPhone] Permission state:', permission.state);
+          
+          if (permission.state === 'denied') {
+            alert('Location permission denied. Please enable location access in your browser settings.\n\nYou can enter the address manually in the location field.');
+            iPhoneLocateBtn.textContent = '📍';
+            iPhoneLocateBtn.disabled = false;
+            return;
+          }
+        }
+        
+        // Get current position with enhanced options
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 30000,
+            maximumAge: 300000 // 5 minutes cache
+          });
+        });
+        
+        const { latitude, longitude } = position.coords;
+        console.log('[iPhone] Got position:', latitude, longitude);
+        
+        // Try to get address using the same services as the original locate button
+        iPhoneLocateBtn.textContent = '⏳';
+        let address = null;
+        
+        // Try OpenStreetMap Nominatim first (same as library.js)
+        try {
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=18`, {
+            headers: { 'User-Agent': 'JL-Field-Reports-App/1.0' }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.display_name) {
+              const addr = data.address;
+              if (addr) {
+                const addressParts = [];
+                
+                // Build street address
+                if (addr.house_number && addr.road) {
+                  addressParts.push(`${addr.house_number} ${addr.road}`);
+                } else if (addr.road) {
+                  addressParts.push(addr.road);
+                }
+                
+                // Add city/suburb
+                if (addr.city) {
+                  addressParts.push(addr.city);
+                } else if (addr.town) {
+                  addressParts.push(addr.town);
+                } else if (addr.suburb) {
+                  addressParts.push(addr.suburb);
+                }
+                
+                // Add state/country
+                if (addr.state) {
+                  addressParts.push(addr.state);
+                }
+                
+                address = addressParts.join(', ');
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('[iPhone] Nominatim geocoding failed:', error);
+        }
+        
+        if (address) {
+          iPhoneLocationField.value = address;
+          originalLocationField.value = address;
+          
+          // Save to current report
+          if (window.Library && window.Library.getCur && window.Library.saveLocation) {
+            const currentReportId = window.Library.getCur();
+            if (currentReportId) {
+              await window.Library.saveLocation(currentReportId, address);
+              console.log('[iPhone] Saved geocoded location for report:', currentReportId);
+            }
+          }
+        } else {
+          // Fallback to coordinates if reverse geocoding fails
+          const coordsAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+          iPhoneLocationField.value = coordsAddress;
+          originalLocationField.value = coordsAddress;
+          
+          if (window.Library && window.Library.getCur && window.Library.saveLocation) {
+            const currentReportId = window.Library.getCur();
+            if (currentReportId) {
+              await window.Library.saveLocation(currentReportId, coordsAddress);
+            }
+          }
+        }
+        
+      } catch (error) {
+        console.error('[iPhone] Geolocation error:', error);
+        let message = 'Unable to get location. ';
+        
+        if (error.code === 1) {
+          message += 'Location access denied.';
+        } else if (error.code === 2) {
+          message += 'Location unavailable.';
+        } else if (error.code === 3) {
+          message += 'Location request timed out.';
+        } else {
+          message += `GPS error (${error.code}): ${error.message}`;
+        }
+        
+        alert(message + '\n\nYou can enter the address manually in the location field.');
+      } finally {
+        iPhoneLocateBtn.textContent = '📍';
+        iPhoneLocateBtn.disabled = false;
+      }
+    });
     
-    console.log('[iPhone] Location element synchronization set up');
+    // Sync storage indicator updates
+    function syncStorageIndicator() {
+      if (iPhoneStorageText && originalStorageText) {
+        iPhoneStorageText.textContent = originalStorageText.textContent;
+      }
+      if (iPhoneStorageFill && originalStorageFill) {
+        iPhoneStorageFill.style.width = originalStorageFill.style.width;
+        iPhoneStorageFill.className = originalStorageFill.className;
+      }
+    }
+    
+    // Set up observer for storage changes
+    if (originalStorageText) {
+      const observer = new MutationObserver(syncStorageIndicator);
+      observer.observe(originalStorageText, { childList: true, subtree: true });
+    }
+    
+    if (originalStorageFill) {
+      const observer = new MutationObserver(syncStorageIndicator);
+      observer.observe(originalStorageFill, { attributes: true, attributeFilter: ['style', 'class'] });
+    }
+    
+    // Load initial values when function is called
+    synciPhoneControls();
+    
+    // Expose function to be called when reports change
+    window.updateiPhoneControls = synciPhoneControls;
+    
+    console.log('[iPhone] All controls functionality set up with per-report-ID support');
   }
   
   // Enhanced orientation lock for iPhone

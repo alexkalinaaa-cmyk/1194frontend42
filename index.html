@@ -293,25 +293,50 @@
       <!-- Controls Row -->
       <div class="workspace-controls">
         <div class="controls-left">
-          <label class="control-group">
-            Job Name: <input id="job-name" type="text" placeholder="Enter job name (required)" class="input-small">
-          </label>
-          <label class="control-group">
-            Job Code: <input id="job-code" type="text" placeholder="Enter job code (required)" class="input-small">
-          </label>
-          <!-- iPhone-specific location controls (hidden on iPad/desktop) -->
-          <div class="control-group iphone-location-controls" style="display: none;">
-            <div class="location-inline">
-              <label class="location-control-compact">
-                Location: <input id="location-field-iphone" type="text" placeholder="Location" class="location-input-compact">
+          <!-- iPhone-specific reorganized controls (hidden on iPad/desktop) -->
+          <div class="iphone-controls-reorganized" style="display: none;">
+            <!-- Job inputs side-by-side -->
+            <div class="job-inputs-row">
+              <label class="job-control-compact">
+                Job Name (required): <input id="job-name-iphone" type="text" placeholder="" class="job-input-compact">
               </label>
-              <button id="locate-btn-iphone" class="btn btn-location-compact" title="Get current location">📍</button>
+              <label class="job-control-compact">
+                Job Code (required): <input id="job-code-iphone" type="text" placeholder="" class="job-input-compact">
+              </label>
+            </div>
+            
+            <!-- Location input full-width below -->
+            <div class="location-row-iphone">
+              <label class="location-control-iphone">
+                Location (required): <input id="location-field-iphone" type="text" placeholder="" class="location-input-iphone">
+              </label>
+              <button id="locate-btn-iphone" class="btn btn-location-iphone" title="Get current location">📍</button>
+            </div>
+            
+            <!-- Storage indicator compact -->
+            <div class="storage-row-iphone">
+              <div id="storage-indicator-iphone" class="storage-indicator-iphone" title="Storage Usage">
+                <span id="storage-text-iphone">Storage: 0MB</span>
+                <div id="storage-bar-iphone" class="storage-bar-iphone">
+                  <div id="storage-fill-iphone" class="storage-fill-iphone"></div>
+                </div>
+              </div>
             </div>
           </div>
-          <div id="storage-indicator" class="storage-indicator" title="Storage Usage">
-            <span id="storage-text">Storage: 0MB</span>
-            <div id="storage-bar" class="storage-bar">
-              <div id="storage-fill" class="storage-fill"></div>
+          
+          <!-- Original controls for iPad/desktop -->
+          <div class="original-controls">
+            <label class="control-group">
+              Job Name: <input id="job-name" type="text" placeholder="Enter job name (required)" class="input-small">
+            </label>
+            <label class="control-group">
+              Job Code: <input id="job-code" type="text" placeholder="Enter job code (required)" class="input-small">
+            </label>
+            <div id="storage-indicator" class="storage-indicator" title="Storage Usage">
+              <span id="storage-text">Storage: 0MB</span>
+              <div id="storage-bar" class="storage-bar">
+                <div id="storage-fill" class="storage-fill"></div>
+              </div>
             </div>
           </div>
         </div>
