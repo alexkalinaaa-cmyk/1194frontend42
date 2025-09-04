@@ -72,31 +72,34 @@
         return;
       }
 
-      // Check permissions first (non-blocking)
-      let hasPermission = true;
-      try {
-        if ('permissions' in navigator) {
-          const permission = await navigator.permissions.query({ name: 'geolocation' });
-          if (permission.state === 'denied') {
-            console.log('[Auto-Location] Location permission denied, skipping auto-grab');
-            return;
-          }
-        }
-      } catch (e) {
-        // Older browsers, continue anyway
-        console.log('[Auto-Location] Permission check not supported, trying anyway');
-      }
-
-      // Attempt to get location with short timeout (non-intrusive)
-      console.log('[Auto-Location] Attempting to auto-grab location for new report');
+      // Show user-friendly message and request permission
+      console.log('[Auto-Location] Requesting location for new report...');
       
+      // Let getCurrentPosition handle permission requests naturally
       const position = await new Promise((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(
-          resolve,
-          reject,
+          (pos) => {
+            console.log('[Auto-Location] Location permission granted and position obtained');
+            resolve(pos);
+          },
+          (error) => {
+            console.log('[Auto-Location] Location request failed:', error.message);
+            
+            // Show helpful message based on error type
+            if (error.code === 1) { // PERMISSION_DENIED
+              console.log('[Auto-Location] User denied location permission for auto-grab');
+              // Could show a subtle notification here in future
+            } else if (error.code === 2) { // POSITION_UNAVAILABLE
+              console.log('[Auto-Location] Location unavailable for auto-grab');
+            } else if (error.code === 3) { // TIMEOUT
+              console.log('[Auto-Location] Location request timed out for auto-grab');
+            }
+            
+            reject(error);
+          },
           { 
             enableHighAccuracy: false, // Use network/wifi for speed
-            timeout: 5000, // Quick timeout so it doesn't delay UX
+            timeout: 8000, // Longer timeout to allow permission prompt
             maximumAge: 300000 // Allow 5-minute cached location
           }
         );

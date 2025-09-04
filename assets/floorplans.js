@@ -1337,6 +1337,7 @@
     canvas.addEventListener('wheel', handleCanvasWheel);
     
     // Add touch events for all devices - let CSS handle zoom behavior
+    console.log(`[iOS DEBUG] Adding touch events to canvas element: ${canvas.id}, tagName: ${canvas.tagName}`);
     canvas.addEventListener('touchstart', handleCanvasTouchStart);
     canvas.addEventListener('touchmove', handleCanvasTouchMove);
     canvas.addEventListener('touchend', handleCanvasTouchEnd);
@@ -1708,7 +1709,10 @@
       
       if (e.touches.length === 2) {
         // Two finger pinch - IMPLEMENT zoom
-        console.log(`[iOS Debug] Starting pinch-to-zoom`);
+        console.log(`[iOS DEBUG] Starting pinch-to-zoom`);
+        console.log(`[iOS DEBUG] Canvas scale at start: ${canvasScale}`);
+        console.log(`[iOS DEBUG] drawFloorplanCanvas function exists: ${typeof drawFloorplanCanvas}`);
+        
         const touch1 = e.touches[0];
         const touch2 = e.touches[1];
         touchState.lastDistance = getTouchDistance(touch1, touch2);
@@ -1721,7 +1725,7 @@
           y: (touch1.clientY + touch2.clientY) / 2
         };
         
-        console.log(`[iOS Debug] Pinch started - initial distance: ${touchState.lastDistance}, scale: ${canvasScale}`);
+        console.log(`[iOS DEBUG] Pinch started - distance: ${touchState.lastDistance}, scale: ${canvasScale}, center: ${touchState.pinchCenter.x},${touchState.pinchCenter.y}`);
         return;
       }
       
@@ -1786,11 +1790,19 @@
           const scaleChange = currentDistance / touchState.lastDistance;
           const newScale = Math.max(0.1, Math.min(5, canvasScale * scaleChange));
           
-          console.log(`[iOS Debug] Pinch zoom - old scale: ${canvasScale.toFixed(2)}, new scale: ${newScale.toFixed(2)}, change: ${scaleChange.toFixed(2)}`);
+          console.log(`[iOS DEBUG] Pinch zoom - old: ${canvasScale.toFixed(2)}, new: ${newScale.toFixed(2)}, change: ${scaleChange.toFixed(2)}, distance: ${currentDistance.toFixed(0)}px`);
           
           // Apply the zoom
           canvasScale = newScale;
-          drawFloorplanCanvas();
+          
+          console.log(`[iOS DEBUG] About to call drawFloorplanCanvas, function type: ${typeof drawFloorplanCanvas}`);
+          
+          if (typeof drawFloorplanCanvas === 'function') {
+            drawFloorplanCanvas();
+            console.log(`[iOS DEBUG] drawFloorplanCanvas called successfully`);
+          } else {
+            console.error(`[iOS DEBUG] drawFloorplanCanvas is not a function! Type: ${typeof drawFloorplanCanvas}`);
+          }
         }
         
         touchState.lastDistance = currentDistance;
@@ -1850,7 +1862,7 @@
       
       if (touchState.isPinching && e.touches.length < 2) {
         // End pinch zoom
-        console.log(`[iOS Debug] Ending pinch zoom`);
+        console.log(`[iOS DEBUG] Ending pinch zoom - final scale: ${canvasScale}`);
         touchState.isPinching = false;
         touchState.lastDistance = 0;
         
