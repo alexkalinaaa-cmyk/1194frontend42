@@ -1700,13 +1700,13 @@
     console.log(`[iOS Debug] Touch start: ${e.touches.length} touches, tool: ${currentTool}`);
     touchState.lastTouches = Array.from(e.touches);
     
-    if (e.touches.length === 1) {
-      // Single touch - treat as mouse down for pin placement and panning
+    // Only handle single touch for pin placement in pindrop mode
+    // Let iOS handle all zoom and pan gestures natively
+    if (e.touches.length === 1 && currentTool === 'pindrop') {
       const touch = e.touches[0];
       const canvas = e.target;
-      const rect = canvas.getBoundingClientRect();
       
-      console.log(`[iOS Debug] Touch coords - clientX: ${touch.clientX}, clientY: ${touch.clientY}, canvas rect: ${rect.left},${rect.top}`);
+      console.log(`[iOS Debug] Single touch for pin placement`);
       
       const mouseEvent = new MouseEvent('mousedown', {
         clientX: touch.clientX,
@@ -1716,17 +1716,14 @@
         cancelable: true
       });
       
-      // Ensure the target is correct for coordinate calculations
       Object.defineProperty(mouseEvent, 'target', {
         value: canvas,
         enumerable: true
       });
       
       handleCanvasMouseDown(mouseEvent);
-    } else if (e.touches.length === 2) {
-      // Two finger touch - prepare for pinch zoom
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
+    }
+    // For all other cases (pan mode, multi-touch), let iOS handle natively
       touchState.lastDistance = getTouchDistance(touch1, touch2);
       touchState.initialScale = canvasScale;
       touchState.initialPan = { x: canvasPanX, y: canvasPanY };
@@ -1737,8 +1734,9 @@
   }
   
   function handleCanvasTouchMove(e) {
-    if (e.touches.length === 1) {
-      // Single touch - panning or pin dragging
+    // Only handle single touch for pin dragging in pindrop mode
+    // Let iOS handle all native gestures (zoom, pan)
+    if (e.touches.length === 1 && currentTool === 'pindrop') {
       const touch = e.touches[0];
       const canvas = e.target;
       
@@ -1750,41 +1748,21 @@
         cancelable: true
       });
       
-      // Ensure the target is correct
       Object.defineProperty(mouseEvent, 'target', {
         value: canvas,
         enumerable: true
       });
       
       handleCanvasMouseMove(mouseEvent);
-    } else if (e.touches.length === 2) {
-      // Two finger pinch-zoom
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const currentDistance = getTouchDistance(touch1, touch2);
-      
-      if (touchState.lastDistance > 0) {
-        const scaleChange = currentDistance / touchState.lastDistance;
-        const newScale = Math.max(0.1, Math.min(5, canvasScale * scaleChange));
-        
-        console.log(`[iOS Debug] Pinch zoom - old scale: ${canvasScale.toFixed(2)}, new scale: ${newScale.toFixed(2)}, change: ${scaleChange.toFixed(2)}`);
-        
-        // Apply zoom
-        canvasScale = newScale;
-        drawFloorplanCanvas();
-      }
-      touchState.lastDistance = currentDistance;
     }
-    touchState.lastTouches = Array.from(e.touches);
-    // Allow native zoom behavior on iOS - don't prevent default for any gestures
-    // e.preventDefault() blocks iOS zoom
+    // For all other cases, let iOS handle natively - don't preventDefault
   }
   
   function handleCanvasTouchEnd(e) {
     console.log(`[iOS Debug] Touch end: ${e.touches.length} touches remaining`);
     
-    if (e.touches.length === 0) {
-      // All touches ended - trigger mouse up for pin placement
+    // Only handle touch end for pin placement in pindrop mode
+    if (e.touches.length === 0 && currentTool === 'pindrop') {
       const canvas = e.target;
       const lastTouch = touchState.lastTouches[0];
       

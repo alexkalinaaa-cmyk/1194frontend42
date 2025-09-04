@@ -642,7 +642,7 @@ img {
 .floorplan-viewer-grid { width:min(1056px,95vw); display:grid; grid-template-rows:auto 1fr; max-height:90vh; }
 .floor-viewer-content { display:grid; grid-template-columns:1fr 240px; gap:8px; padding:8px; min-height:600px; }
 .floor-viewer-main { display:flex; flex-direction:column; }
-.floor-canvas-container { position:relative; flex:1; background:#000; border:1px solid var(--border); border-radius:8px; overflow:hidden; min-height:500px; }
+.floor-canvas-container { position:relative; flex:1; background:#000; border:1px solid var(--border); border-radius:8px; overflow:hidden; min-height:200px; }
 .floor-canvas-container canvas { position:absolute; top:0; left:0; width:100%; height:100%; cursor:grab; touch-action: none; }
 .floor-canvas-container canvas:active { cursor:grabbing; }
 .floor-pins-layer { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:visible; }
@@ -1434,13 +1434,15 @@ img {
   
   /* Floor plan viewer optimization */
   .floorplan-viewer-grid {
-    width: calc(100vw - 30px);
-    max-width: calc(100vw - 30px);
-    max-height: calc(100vh - 80px);
-    margin: 15px;
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    height: calc(100vh - 120px);
+    max-height: calc(100vh - 120px);
+    margin: 10px;
     left: 50%;
     transform: translateX(-50%);
-    position: relative;
+    position: fixed;
+    top: 60px;
   }
   
   /* Enable pinch-zoom on iPhone floor plan canvas */
@@ -1450,10 +1452,19 @@ img {
   
   .floor-viewer-content {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr 160px;
-    min-height: 330px;
+    grid-template-rows: 1fr 120px;
+    height: calc(100vh - 160px);
     max-height: calc(100vh - 160px);
+    min-height: 250px;
     overflow: hidden;
+    padding: 4px;
+  }
+  
+  .floor-canvas-container {
+    min-height: 200px !important;
+    max-height: calc(100vh - 280px) !important;
+    margin: 0;
+    width: 100%;
   }
   
   .floor-card-tray {
