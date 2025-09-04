@@ -299,6 +299,15 @@
           <label class="control-group">
             Job Code: <input id="job-code" type="text" placeholder="Enter job code (required)" class="input-small">
           </label>
+          <!-- iPhone-specific location controls (hidden on iPad/desktop) -->
+          <div class="control-group iphone-location-controls" style="display: none;">
+            <div class="location-inline">
+              <label class="location-control-compact">
+                Location: <input id="location-field-iphone" type="text" placeholder="Location" class="location-input-compact">
+              </label>
+              <button id="locate-btn-iphone" class="btn btn-location-compact" title="Get current location">📍</button>
+            </div>
+          </div>
           <div id="storage-indicator" class="storage-indicator" title="Storage Usage">
             <span id="storage-text">Storage: 0MB</span>
             <div id="storage-bar" class="storage-bar">

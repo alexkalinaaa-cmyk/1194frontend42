@@ -2002,8 +2002,54 @@ window.addEventListener('resize', function(){ if(!editor.hasAttribute('hidden'))
     // Add iPhone class to body for additional styling hooks
     document.body.classList.add('iphone-optimized');
     
+    // Set up iPhone location element synchronization
+    setupiPhoneLocationSync();
+    
     // Log viewport dimensions for debugging
     console.log(`[iPhone] Viewport: ${window.innerWidth}x${window.innerHeight}, Screen: ${window.screen.width}x${window.screen.height}`);
+  }
+  
+  // Sync iPhone location elements with original functionality
+  function setupiPhoneLocationSync() {
+    const originalLocationField = $("#location-field");
+    const iPhoneLocationField = $("#location-field-iphone");
+    const originalLocateBtn = $("#locate-btn");
+    const iPhoneLocateBtn = $("#locate-btn-iphone");
+    
+    if (!originalLocationField || !iPhoneLocationField || !originalLocateBtn || !iPhoneLocateBtn) {
+      console.warn('[iPhone] Location elements not found for sync');
+      return;
+    }
+    
+    // Sync input values bidirectionally
+    function syncToOriginal() {
+      originalLocationField.value = iPhoneLocationField.value;
+      // Trigger any existing change events on original field
+      originalLocationField.dispatchEvent(new Event('input', { bubbles: true }));
+      originalLocationField.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
+    function syncToiPhone() {
+      iPhoneLocationField.value = originalLocationField.value;
+    }
+    
+    // Set up bidirectional sync
+    iPhoneLocationField.addEventListener('input', syncToOriginal);
+    iPhoneLocationField.addEventListener('change', syncToOriginal);
+    originalLocationField.addEventListener('input', syncToiPhone);
+    originalLocationField.addEventListener('change', syncToiPhone);
+    
+    // Sync iPhone locate button to original locate button functionality
+    iPhoneLocateBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('[iPhone] iPhone locate button clicked, triggering original');
+      originalLocateBtn.click();
+    });
+    
+    // Initial sync
+    syncToiPhone();
+    
+    console.log('[iPhone] Location element synchronization set up');
   }
   
   // Enhanced orientation lock for iPhone

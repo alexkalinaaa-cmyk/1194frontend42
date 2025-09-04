@@ -1090,29 +1090,79 @@ img {
   /* Stack workspace controls vertically on iPhone */
   .workspace-controls {
     flex-direction: column;
-    gap: 8px;
-    padding: 8px;
+    gap: 6px;
+    padding: 6px;
   }
   
   .controls-left {
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
     width: 100%;
   }
   
   .control-group {
     flex-direction: column;
     align-items: stretch;
-    gap: 4px;
+    gap: 2px;
   }
   
+  /* Make job inputs much smaller for iPhone */
   .input-small {
     width: 100%;
+    font-size: 14px;
+    padding: 3px 6px;
+    height: 32px;
+  }
+  
+  /* Show iPhone location controls and hide original location row */
+  .iphone-location-controls {
+    display: block !important;
+  }
+  
+  .location-row {
+    display: none !important;
+  }
+  
+  /* iPhone location controls styling */
+  .location-inline {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+  }
+  
+  .location-control-compact {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  
+  .location-input-compact {
+    flex: 1;
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 14px;
+    height: 32px;
+  }
+  
+  .btn-location-compact {
+    min-width: 32px !important;
+    width: 32px;
+    height: 32px;
+    padding: 4px !important;
+    font-size: 14px;
+    flex-shrink: 0;
   }
   
   .controls-right {
     display: flex;
-    gap: 4px;
+    gap: 3px;
     justify-content: space-between;
     width: 100%;
   }
@@ -1120,32 +1170,56 @@ img {
   /* Optimize buttons for iPhone */
   .btn {
     min-width: auto;
-    min-height: 44px; /* iOS touch target */
-    padding: 8px 12px;
-    font-size: 14px;
+    min-height: 36px; /* Reduced for more space */
+    padding: 4px 6px;
+    font-size: 12px;
   }
   
   .btn-small {
-    padding: 4px 8px;
-    font-size: 11px;
-    min-height: 32px;
+    padding: 2px 4px;
+    font-size: 10px;
+    min-height: 28px;
   }
   
-  /* iPhone-specific button sizing */
+  /* iPhone-specific button sizing - much smaller */
   #btn-floorplans {
     flex: 1;
-    max-width: 100px;
+    max-width: 70px;
+    font-size: 11px;
+    padding: 4px;
   }
   
   #lib-export {
     flex: 1;
-    max-width: 60px;
+    max-width: 40px;
+    font-size: 11px;
+    padding: 4px;
   }
   
   #btn-notes {
-    width: 44px;
-    padding: 8px;
+    width: 36px;
+    height: 36px;
+    padding: 4px;
+    font-size: 16px;
     flex-shrink: 0;
+  }
+  
+  /* Make storage indicator more compact on iPhone */
+  .storage-indicator {
+    display: flex !important; /* Override the hide rule from before */
+    flex-direction: row;
+    gap: 4px;
+    font-size: 10px;
+    align-items: center;
+  }
+  
+  #storage-text {
+    font-size: 9px;
+  }
+  
+  .storage-bar {
+    width: 60px;
+    height: 3px;
   }
   
   /* Image cards optimization for iPhone */
@@ -1163,19 +1237,9 @@ img {
     height: 160px;
   }
   
-  /* Location row optimization */
+  /* Hide original location row on iPhone since we moved it to controls */
   .location-row {
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .location-control {
-    width: 100%;
-  }
-  
-  #locate-btn {
-    width: 100%;
-    min-height: 44px;
+    display: none !important;
   }
   
   /* Modal optimizations for iPhone */
@@ -1187,6 +1251,17 @@ img {
   
   .sheet.small {
     width: calc(100vw - 20px);
+  }
+  
+  /* Location-related modal optimizations */
+  .location-modal, .geolocation-modal {
+    max-width: calc(100vw - 30px) !important;
+    padding: 8px !important;
+  }
+  
+  .location-modal .input, .geolocation-modal .input {
+    font-size: 16px !important;
+    padding: 8px !important;
   }
   
   /* Annotation editor iPhone layout */
