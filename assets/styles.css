@@ -1627,6 +1627,51 @@ button[data-floor-tool].active,
       grid-template-columns: 1fr !important;
       grid-template-rows: 180px 1fr !important;
     }
+    
+    /* Floor plan canvas height increase for iPhone */
+    .floor-canvas-container {
+      min-height: 250px !important; /* 200px + 50px */
+    }
+    
+    /* Report ID/Name buttons - make smaller for 2 per row on iPhone */
+    .report-name-btn {
+      width: 45% !important;
+      max-width: 45% !important;
+      font-size: 10px !important;
+      padding: 4px 6px !important;
+      min-height: 24px !important;
+      margin: 2px !important;
+      display: inline-block !important;
+      vertical-align: top !important;
+    }
+    
+    .child-report-btn {
+      font-size: 14px !important;
+      padding: 8px 12px !important;
+      min-height: 36px !important;
+      margin-bottom: 2px !important;
+    }
+    
+    /* Make report items use flexbox for 2-column layout */
+    .report-name-item {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+    }
+    
+    .report-name-item > div:first-child {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: space-between !important;
+      gap: 2% !important;
+      width: 100% !important;
+      margin-left: 0px !important;
+    }
+    
+    /* Fix annotation notes zoom bug - prevent iOS zoom on focus */
+    #notes {
+      font-size: 16px !important;
+    }
   }
 }
 "/* force deployment $(date) */" 

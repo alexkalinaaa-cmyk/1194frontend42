@@ -1700,7 +1700,8 @@
     initialPan: { x: 0, y: 0 },
     isPinching: false,
     isPanning: false,
-    lastPan: { x: 0, y: 0 }
+    lastPan: { x: 0, y: 0 },
+    pinchCenter: { x: 0, y: 0 }
   };
 
   function handleCanvasTouchStart(e) {
@@ -1719,7 +1720,15 @@
         touchState.isPinching = true;
         touchState.isPanning = false;
         
-        console.log(`[iOS] Starting pinch zoom - initial scale: ${viewerState.scale}`);
+        // Store the center point of the pinch for proper zoom anchoring
+        const canvas = e.target;
+        const canvasRect = canvas.getBoundingClientRect();
+        touchState.pinchCenter = {
+          x: ((touch1.clientX + touch2.clientX) / 2) - canvasRect.left,
+          y: ((touch1.clientY + touch2.clientY) / 2) - canvasRect.top
+        };
+        
+        console.log(`[iOS] Starting pinch zoom - initial scale: ${viewerState.scale}, center: ${touchState.pinchCenter.x}, ${touchState.pinchCenter.y}`);
         return;
       }
       
@@ -1798,16 +1807,26 @@
           const scaleChange = currentDistance / touchState.lastDistance;
           const newScale = Math.max(0.1, Math.min(5, viewerState.scale * scaleChange));
           
-          console.log(`[iOS DEBUG] Pinch zoom - old: ${viewerState.scale.toFixed(2)}, new: ${newScale.toFixed(2)}, change: ${scaleChange.toFixed(2)}, distance: ${currentDistance.toFixed(0)}px`);
+          // Calculate zoom anchoring to pinch center
+          // The formula: new_offset = pinch_center + (old_offset - pinch_center) * scale_ratio
+          const scaleRatio = newScale / viewerState.scale;
+          const newOffsetX = touchState.pinchCenter.x + (viewerState.offsetX - touchState.pinchCenter.x) * scaleRatio;
+          const newOffsetY = touchState.pinchCenter.y + (viewerState.offsetY - touchState.pinchCenter.y) * scaleRatio;
           
-          // Apply the zoom
+          console.log(`[iOS DEBUG] Pinch zoom - old: ${viewerState.scale.toFixed(2)}, new: ${newScale.toFixed(2)}, change: ${scaleChange.toFixed(2)}, distance: ${currentDistance.toFixed(0)}px`);
+          console.log(`[iOS DEBUG] Zoom anchor - center: (${touchState.pinchCenter.x}, ${touchState.pinchCenter.y}), offset: (${viewerState.offsetX}, ${viewerState.offsetY}) -> (${newOffsetX}, ${newOffsetY})`);
+          
+          // Apply the zoom and new offsets
           viewerState.scale = newScale;
+          viewerState.offsetX = newOffsetX;
+          viewerState.offsetY = newOffsetY;
           
           console.log(`[iOS DEBUG] About to call drawCurrentPlan, function type: ${typeof drawCurrentPlan}`);
           
           if (typeof drawCurrentPlan === 'function') {
             drawCurrentPlan();
-            console.log(`[iOS DEBUG] drawCurrentPlan called successfully`);
+            renderPins(); // Update pin positions during zoom
+            console.log(`[iOS DEBUG] drawCurrentPlan and renderPins called successfully`);
           } else {
             console.error(`[iOS DEBUG] drawCurrentPlan is not a function! Type: ${typeof drawCurrentPlan}`);
           }
@@ -1837,6 +1856,7 @@
           // Redraw canvas with new offset
           if (typeof drawCurrentPlan === 'function') {
             drawCurrentPlan();
+            renderPins(); // Update pin positions during pan
           }
           return;
         }
