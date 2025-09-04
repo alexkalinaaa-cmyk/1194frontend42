@@ -1703,16 +1703,31 @@
     console.log(`[iOS Debug] Touch start: ${e.touches.length} touches, tool: ${currentTool}`);
     touchState.lastTouches = Array.from(e.touches);
     
-    // On iOS, NEVER interfere with multi-touch gestures (pinch-to-zoom)
+    // IMPLEMENT ACTUAL iOS pinch-to-zoom
     if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-      // For multi-touch (pinch), do absolutely nothing - let iOS handle natively
-      if (e.touches.length > 1) {
-        console.log(`[iOS Debug] Multi-touch detected (${e.touches.length}), letting iOS handle natively`);
+      
+      if (e.touches.length === 2) {
+        // Two finger pinch - IMPLEMENT zoom
+        console.log(`[iOS Debug] Starting pinch-to-zoom`);
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        touchState.lastDistance = getTouchDistance(touch1, touch2);
+        touchState.initialScale = canvasScale;
+        touchState.isPinching = true;
+        
+        // Get center point for zoom
+        touchState.pinchCenter = {
+          x: (touch1.clientX + touch2.clientX) / 2,
+          y: (touch1.clientY + touch2.clientY) / 2
+        };
+        
+        console.log(`[iOS Debug] Pinch started - initial distance: ${touchState.lastDistance}, scale: ${canvasScale}`);
         return;
       }
       
-      // Only handle single touch for specific tools
       if (e.touches.length === 1 && (currentTool === 'pindrop' || currentTool === 'pan')) {
+        // Single touch for tools
+        touchState.isPinching = false;
         const touch = e.touches[0];
         const canvas = e.target;
         
@@ -1731,7 +1746,7 @@
         
         handleCanvasMouseDown(mouseEvent);
       }
-      return; // Let iOS handle all other interactions natively
+      return;
     }
     
     // Non-iOS device handling (original logic)
@@ -1757,16 +1772,33 @@
   }
   
   function handleCanvasTouchMove(e) {
-    // On iOS, NEVER interfere with multi-touch gestures (pinch-to-zoom)
+    // IMPLEMENT ACTUAL iOS pinch-to-zoom
     if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-      // For multi-touch (pinch), do absolutely nothing - let iOS handle natively
-      if (e.touches.length > 1) {
-        console.log(`[iOS Debug] Multi-touch move detected (${e.touches.length}), letting iOS handle natively`);
+      
+      if (e.touches.length === 2 && touchState.isPinching) {
+        // Two finger pinch - CALCULATE and APPLY zoom
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const currentDistance = getTouchDistance(touch1, touch2);
+        
+        if (touchState.lastDistance > 0) {
+          // Calculate scale change
+          const scaleChange = currentDistance / touchState.lastDistance;
+          const newScale = Math.max(0.1, Math.min(5, canvasScale * scaleChange));
+          
+          console.log(`[iOS Debug] Pinch zoom - old scale: ${canvasScale.toFixed(2)}, new scale: ${newScale.toFixed(2)}, change: ${scaleChange.toFixed(2)}`);
+          
+          // Apply the zoom
+          canvasScale = newScale;
+          drawFloorplanCanvas();
+        }
+        
+        touchState.lastDistance = currentDistance;
         return;
       }
       
-      // Only handle single touch for specific tools
       if (e.touches.length === 1 && (currentTool === 'pindrop' || currentTool === 'pan')) {
+        // Single touch for tools
         const touch = e.touches[0];
         const canvas = e.target;
         
@@ -1785,7 +1817,7 @@
         
         handleCanvasMouseMove(mouseEvent);
       }
-      return; // Let iOS handle natively
+      return;
     }
     
     // Non-iOS device handling
@@ -1813,18 +1845,23 @@
   function handleCanvasTouchEnd(e) {
     console.log(`[iOS Debug] Touch end: ${e.touches.length} touches remaining`);
     
-    // On iOS, NEVER interfere with multi-touch gestures (pinch-to-zoom)
+    // HANDLE iOS pinch-to-zoom end
     if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-      // For multi-touch end, do absolutely nothing - let iOS handle natively
-      if (touchState.lastTouches.length > 1) {
-        console.log(`[iOS Debug] Multi-touch end detected, letting iOS handle natively`);
-        touchState.lastTouches = [];
+      
+      if (touchState.isPinching && e.touches.length < 2) {
+        // End pinch zoom
+        console.log(`[iOS Debug] Ending pinch zoom`);
+        touchState.isPinching = false;
         touchState.lastDistance = 0;
+        
+        if (e.touches.length === 0) {
+          touchState.lastTouches = [];
+        }
         return;
       }
       
-      // Only handle single touch end for specific tools
       if (e.touches.length === 0 && (currentTool === 'pindrop' || currentTool === 'pan')) {
+        // Single touch end for tools
         const canvas = e.target;
         const lastTouch = touchState.lastTouches[0];
         
@@ -1845,9 +1882,11 @@
           handleCanvasMouseUp(mouseEvent);
         }
       }
+      
       touchState.lastTouches = [];
       touchState.lastDistance = 0;
-      return; // Let iOS handle natively
+      touchState.isPinching = false;
+      return;
     }
     
     // Non-iOS device handling
