@@ -92,8 +92,12 @@
             });
           }
           
-          // Prevent context menu on long press in PWA mode
+          // Allow context menu for floor plan interactions on iOS
           document.addEventListener('contextmenu', function(e) {
+            // Don't prevent context menu in floor plan viewer - allow iOS gestures
+            if (e.target.closest('#floorplan-viewer')) {
+              return;
+            }
             e.preventDefault();
           });
           
@@ -478,7 +482,6 @@
       </div>
       <div class="right">
         <button id="floor-viewer-close" class="btn">Close</button>
-        <div id="plan-badge" class="plan-badge">23 plans</div>
       </div>
     </div>
     <div class="floor-viewer-content">

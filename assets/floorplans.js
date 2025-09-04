@@ -1336,12 +1336,10 @@
     canvas.addEventListener('mouseup', handleCanvasMouseUp);
     canvas.addEventListener('wheel', handleCanvasWheel);
     
-    // Only add touch events if NOT on iOS to allow native zoom
-    if (!/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-      canvas.addEventListener('touchstart', handleCanvasTouchStart);
-      canvas.addEventListener('touchmove', handleCanvasTouchMove);
-      canvas.addEventListener('touchend', handleCanvasTouchEnd);
-    }
+    // Add touch events for all devices - let CSS handle zoom behavior
+    canvas.addEventListener('touchstart', handleCanvasTouchStart);
+    canvas.addEventListener('touchmove', handleCanvasTouchMove);
+    canvas.addEventListener('touchend', handleCanvasTouchEnd);
   }
   
   function setupToolControls() {
@@ -1606,7 +1604,10 @@
   }
   
   function handleCanvasWheel(e) {
-    e.preventDefault();
+    // Don't preventDefault on iOS - allow native zoom/scroll
+    if (!/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
+      e.preventDefault();
+    }
     
     // Close pin popover when zooming (viewport interaction)
     hidePinPopover(true);
@@ -1702,13 +1703,34 @@
     console.log(`[iOS Debug] Touch start: ${e.touches.length} touches, tool: ${currentTool}`);
     touchState.lastTouches = Array.from(e.touches);
     
-    // Only handle single touch for pin placement in pindrop mode
-    // Let iOS handle all zoom and pan gestures natively
-    if (e.touches.length === 1 && currentTool === 'pindrop') {
+    // On iOS, only handle pindrop tool, let native gestures handle everything else
+    if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
+      if (e.touches.length === 1 && currentTool === 'pindrop') {
+        const touch = e.touches[0];
+        const canvas = e.target;
+        
+        const mouseEvent = new MouseEvent('mousedown', {
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+          button: 0,
+          bubbles: true,
+          cancelable: true
+        });
+        
+        Object.defineProperty(mouseEvent, 'target', {
+          value: canvas,
+          enumerable: true
+        });
+        
+        handleCanvasMouseDown(mouseEvent);
+      }
+      return; // Let iOS handle all other touch interactions natively
+    }
+    
+    // Non-iOS device handling (original logic)
+    if (e.touches.length === 1) {
       const touch = e.touches[0];
       const canvas = e.target;
-      
-      console.log(`[iOS Debug] Single touch for pin placement`);
       
       const mouseEvent = new MouseEvent('mousedown', {
         clientX: touch.clientX,
@@ -1725,13 +1747,35 @@
       
       handleCanvasMouseDown(mouseEvent);
     }
-    // For all other cases (pan mode, multi-touch), let iOS handle natively
   }
   
   function handleCanvasTouchMove(e) {
-    // Only handle single touch for pin dragging in pindrop mode
-    // Let iOS handle all native gestures (zoom, pan)
-    if (e.touches.length === 1 && currentTool === 'pindrop') {
+    // On iOS, minimal interference with native gestures
+    if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
+      if (e.touches.length === 1 && currentTool === 'pindrop') {
+        const touch = e.touches[0];
+        const canvas = e.target;
+        
+        const mouseEvent = new MouseEvent('mousemove', {
+          clientX: touch.clientX,
+          clientY: touch.clientY,
+          button: 0,
+          bubbles: true,
+          cancelable: true
+        });
+        
+        Object.defineProperty(mouseEvent, 'target', {
+          value: canvas,
+          enumerable: true
+        });
+        
+        handleCanvasMouseMove(mouseEvent);
+      }
+      return; // Let iOS handle natively
+    }
+    
+    // Non-iOS device handling
+    if (e.touches.length === 1) {
       const touch = e.touches[0];
       const canvas = e.target;
       
@@ -1750,14 +1794,41 @@
       
       handleCanvasMouseMove(mouseEvent);
     }
-    // For all other cases, let iOS handle natively - don't preventDefault
   }
   
   function handleCanvasTouchEnd(e) {
     console.log(`[iOS Debug] Touch end: ${e.touches.length} touches remaining`);
     
-    // Only handle touch end for pin placement in pindrop mode
-    if (e.touches.length === 0 && currentTool === 'pindrop') {
+    // On iOS, minimal interference
+    if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
+      if (e.touches.length === 0 && currentTool === 'pindrop') {
+        const canvas = e.target;
+        const lastTouch = touchState.lastTouches[0];
+        
+        if (lastTouch) {
+          const mouseEvent = new MouseEvent('mouseup', {
+            clientX: lastTouch.clientX,
+            clientY: lastTouch.clientY,
+            button: 0,
+            bubbles: true,
+            cancelable: true
+          });
+          
+          Object.defineProperty(mouseEvent, 'target', {
+            value: canvas,
+            enumerable: true
+          });
+          
+          handleCanvasMouseUp(mouseEvent);
+        }
+      }
+      touchState.lastTouches = [];
+      touchState.lastDistance = 0;
+      return; // Let iOS handle natively
+    }
+    
+    // Non-iOS device handling
+    if (e.touches.length === 0) {
       const canvas = e.target;
       const lastTouch = touchState.lastTouches[0];
       
@@ -1770,24 +1841,17 @@
           cancelable: true
         });
         
-        // Ensure the target is correct
         Object.defineProperty(mouseEvent, 'target', {
           value: canvas,
           enumerable: true
         });
         
-        console.log(`[iOS Debug] Triggering mouse up at: ${lastTouch.clientX}, ${lastTouch.clientY}`);
         handleCanvasMouseUp(mouseEvent);
       }
       
       touchState.lastTouches = [];
       touchState.lastDistance = 0;
-    } else if (e.touches.length === 1) {
-      // Went from 2 touches to 1 - end pinch zoom mode
-      console.log(`[iOS Debug] Ending pinch zoom mode`);
-      touchState.lastDistance = 0;
     }
-    // Don't preventDefault to allow native iOS zoom
   }
   
   // Helper function to calculate distance between two touches
