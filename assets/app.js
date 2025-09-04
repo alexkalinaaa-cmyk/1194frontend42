@@ -385,7 +385,7 @@
   // Theme switching functions
   function applyTheme(theme) {
     const validThemes = ['dark', 'light', 'blue', 'green', 'purple', 'sunset'];
-    const selectedTheme = validThemes.includes(theme) ? theme : 'dark';
+    const selectedTheme = validThemes.includes(theme) ? theme : 'blue';
     
     if (selectedTheme === 'dark') {
       document.documentElement.removeAttribute('data-theme');

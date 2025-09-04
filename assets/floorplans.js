@@ -1336,15 +1336,11 @@
     canvas.addEventListener('mouseup', handleCanvasMouseUp);
     canvas.addEventListener('wheel', handleCanvasWheel);
     
-    // NUCLEAR iOS fix - only add touch events for NON-iOS devices
-    if (!/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-      console.log(`[DEBUG] Adding touch events to canvas element: ${canvas.id}, tagName: ${canvas.tagName}`);
-      canvas.addEventListener('touchstart', handleCanvasTouchStart);
-      canvas.addEventListener('touchmove', handleCanvasTouchMove);
-      canvas.addEventListener('touchend', handleCanvasTouchEnd);
-    } else {
-      console.log(`[iOS NUCLEAR] Skipping ALL touch event handlers for iOS - pure native zoom`);
-    }
+    // Add touch events for all devices - WORKING iOS implementation
+    console.log(`[DEBUG] Adding touch events to canvas element: ${canvas.id}, tagName: ${canvas.tagName}`);
+    canvas.addEventListener('touchstart', handleCanvasTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleCanvasTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleCanvasTouchEnd, { passive: false });
   }
   
   function setupToolControls() {
@@ -1701,63 +1697,71 @@
     lastTouches: [],
     lastDistance: 0,
     initialScale: 1,
-    initialPan: { x: 0, y: 0 }
+    initialPan: { x: 0, y: 0 },
+    isPinching: false,
+    isPanning: false,
+    lastPan: { x: 0, y: 0 }
   };
 
   function handleCanvasTouchStart(e) {
-    console.log(`[iOS Debug] Touch start: ${e.touches.length} touches, tool: ${currentTool}`);
+    console.log(`[iOS] Touch start: ${e.touches.length} touches, tool: ${currentTool}`);
     touchState.lastTouches = Array.from(e.touches);
     
-    // IMPLEMENT ACTUAL iOS pinch-to-zoom
+    // iOS-specific handling for better touch experience
     if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-      
       if (e.touches.length === 2) {
-        // Two finger pinch - IMPLEMENT zoom
-        console.log(`[iOS DEBUG] Starting pinch-to-zoom`);
-        console.log(`[iOS DEBUG] Canvas scale at start: ${canvasScale}`);
-        console.log(`[iOS DEBUG] drawFloorplanCanvas function exists: ${typeof drawFloorplanCanvas}`);
-        
+        // Two finger pinch zoom - iOS specific
+        e.preventDefault();
         const touch1 = e.touches[0];
         const touch2 = e.touches[1];
         touchState.lastDistance = getTouchDistance(touch1, touch2);
-        touchState.initialScale = canvasScale;
+        touchState.initialScale = viewerState.scale;
         touchState.isPinching = true;
+        touchState.isPanning = false;
         
-        // Get center point for zoom
-        touchState.pinchCenter = {
-          x: (touch1.clientX + touch2.clientX) / 2,
-          y: (touch1.clientY + touch2.clientY) / 2
-        };
-        
-        console.log(`[iOS DEBUG] Pinch started - distance: ${touchState.lastDistance}, scale: ${canvasScale}, center: ${touchState.pinchCenter.x},${touchState.pinchCenter.y}`);
+        console.log(`[iOS] Starting pinch zoom - initial scale: ${viewerState.scale}`);
         return;
       }
       
-      if (e.touches.length === 1 && (currentTool === 'pindrop' || currentTool === 'pan')) {
-        // Single touch for tools
+      if (e.touches.length === 1) {
+        // Single touch - handle based on current tool
         touchState.isPinching = false;
         const touch = e.touches[0];
         const canvas = e.target;
         
-        const mouseEvent = new MouseEvent('mousedown', {
-          clientX: touch.clientX,
-          clientY: touch.clientY,
-          button: 0,
-          bubbles: true,
-          cancelable: true
-        });
+        if (currentTool === 'pan') {
+          // Pan/drag mode for iOS
+          touchState.lastPan = { x: touch.clientX, y: touch.clientY };
+          touchState.isPanning = true;
+          console.log(`[iOS] Starting pan/drag`);
+          e.preventDefault();
+          return;
+        }
         
-        Object.defineProperty(mouseEvent, 'target', {
-          value: canvas,
-          enumerable: true
-        });
-        
-        handleCanvasMouseDown(mouseEvent);
+        if (currentTool === 'pindrop') {
+          // Pin placement mode - convert to mouse event for iOS
+          const mouseEvent = new MouseEvent('mousedown', {
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            button: 0,
+            bubbles: true,
+            cancelable: true
+          });
+          
+          Object.defineProperty(mouseEvent, 'target', {
+            value: canvas,
+            enumerable: true
+          });
+          
+          handleCanvasMouseDown(mouseEvent);
+          e.preventDefault();
+          return;
+        }
       }
-      return;
+      return; // Exit early for iOS
     }
     
-    // Non-iOS device handling (original logic)
+    // Non-iOS device handling (standard behavior)
     if (e.touches.length === 1) {
       const touch = e.touches[0];
       const canvas = e.target;
@@ -1792,20 +1796,20 @@
         if (touchState.lastDistance > 0) {
           // Calculate scale change
           const scaleChange = currentDistance / touchState.lastDistance;
-          const newScale = Math.max(0.1, Math.min(5, canvasScale * scaleChange));
+          const newScale = Math.max(0.1, Math.min(5, viewerState.scale * scaleChange));
           
-          console.log(`[iOS DEBUG] Pinch zoom - old: ${canvasScale.toFixed(2)}, new: ${newScale.toFixed(2)}, change: ${scaleChange.toFixed(2)}, distance: ${currentDistance.toFixed(0)}px`);
+          console.log(`[iOS DEBUG] Pinch zoom - old: ${viewerState.scale.toFixed(2)}, new: ${newScale.toFixed(2)}, change: ${scaleChange.toFixed(2)}, distance: ${currentDistance.toFixed(0)}px`);
           
           // Apply the zoom
-          canvasScale = newScale;
+          viewerState.scale = newScale;
           
-          console.log(`[iOS DEBUG] About to call drawFloorplanCanvas, function type: ${typeof drawFloorplanCanvas}`);
+          console.log(`[iOS DEBUG] About to call drawCurrentPlan, function type: ${typeof drawCurrentPlan}`);
           
-          if (typeof drawFloorplanCanvas === 'function') {
-            drawFloorplanCanvas();
-            console.log(`[iOS DEBUG] drawFloorplanCanvas called successfully`);
+          if (typeof drawCurrentPlan === 'function') {
+            drawCurrentPlan();
+            console.log(`[iOS DEBUG] drawCurrentPlan called successfully`);
           } else {
-            console.error(`[iOS DEBUG] drawFloorplanCanvas is not a function! Type: ${typeof drawFloorplanCanvas}`);
+            console.error(`[iOS DEBUG] drawCurrentPlan is not a function! Type: ${typeof drawCurrentPlan}`);
           }
         }
         
@@ -1813,25 +1817,47 @@
         return;
       }
       
-      if (e.touches.length === 1 && (currentTool === 'pindrop' || currentTool === 'pan')) {
-        // Single touch for tools
+      if (e.touches.length === 1) {
         const touch = e.touches[0];
         const canvas = e.target;
         
-        const mouseEvent = new MouseEvent('mousemove', {
-          clientX: touch.clientX,
-          clientY: touch.clientY,
-          button: 0,
-          bubbles: true,
-          cancelable: true
-        });
+        if (currentTool === 'pan' && touchState.isPanning) {
+          // Handle pan/drag for iOS
+          e.preventDefault();
+          const deltaX = touch.clientX - touchState.lastPan.x;
+          const deltaY = touch.clientY - touchState.lastPan.y;
+          
+          viewerState.offsetX += deltaX;
+          viewerState.offsetY += deltaY;
+          
+          touchState.lastPan = { x: touch.clientX, y: touch.clientY };
+          
+          console.log(`[iOS] Panning - delta: ${deltaX}, ${deltaY}, offset: ${viewerState.offsetX}, ${viewerState.offsetY}`);
+          
+          // Redraw canvas with new offset
+          if (typeof drawCurrentPlan === 'function') {
+            drawCurrentPlan();
+          }
+          return;
+        }
         
-        Object.defineProperty(mouseEvent, 'target', {
-          value: canvas,
-          enumerable: true
-        });
-        
-        handleCanvasMouseMove(mouseEvent);
+        if (currentTool === 'pindrop') {
+          // Pin placement mode - convert to mouse event for iOS
+          const mouseEvent = new MouseEvent('mousemove', {
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+            button: 0,
+            bubbles: true,
+            cancelable: true
+          });
+          
+          Object.defineProperty(mouseEvent, 'target', {
+            value: canvas,
+            enumerable: true
+          });
+          
+          handleCanvasMouseMove(mouseEvent);
+        }
       }
       return;
     }
@@ -1866,7 +1892,7 @@
       
       if (touchState.isPinching && e.touches.length < 2) {
         // End pinch zoom
-        console.log(`[iOS DEBUG] Ending pinch zoom - final scale: ${canvasScale}`);
+        console.log(`[iOS DEBUG] Ending pinch zoom - final scale: ${viewerState.scale}`);
         touchState.isPinching = false;
         touchState.lastDistance = 0;
         
@@ -1876,32 +1902,43 @@
         return;
       }
       
-      if (e.touches.length === 0 && (currentTool === 'pindrop' || currentTool === 'pan')) {
-        // Single touch end for tools
+      if (e.touches.length === 0) {
+        // Touch end - reset states
         const canvas = e.target;
-        const lastTouch = touchState.lastTouches[0];
         
-        if (lastTouch) {
-          const mouseEvent = new MouseEvent('mouseup', {
-            clientX: lastTouch.clientX,
-            clientY: lastTouch.clientY,
-            button: 0,
-            bubbles: true,
-            cancelable: true
-          });
-          
-          Object.defineProperty(mouseEvent, 'target', {
-            value: canvas,
-            enumerable: true
-          });
-          
-          handleCanvasMouseUp(mouseEvent);
+        if (currentTool === 'pan' && touchState.isPanning) {
+          // End pan/drag for iOS
+          console.log(`[iOS] Ending pan/drag`);
+          touchState.isPanning = false;
+        }
+        
+        if (currentTool === 'pindrop') {
+          // Pin placement end - convert to mouse event for iOS
+          const lastTouch = touchState.lastTouches[0];
+          if (lastTouch) {
+            const mouseEvent = new MouseEvent('mouseup', {
+              clientX: lastTouch.clientX,
+              clientY: lastTouch.clientY,
+              button: 0,
+              bubbles: true,
+              cancelable: true
+            });
+            
+            Object.defineProperty(mouseEvent, 'target', {
+              value: canvas,
+              enumerable: true
+            });
+            
+            handleCanvasMouseUp(mouseEvent);
+          }
         }
       }
       
+      // Reset all touch state for iOS
       touchState.lastTouches = [];
       touchState.lastDistance = 0;
       touchState.isPinching = false;
+      touchState.isPanning = false;
       return;
     }
     
