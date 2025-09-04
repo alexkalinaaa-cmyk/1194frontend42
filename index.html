@@ -71,6 +71,22 @@
             setTimeout(handleViewportChange, 100);
           });
           
+          // Enhanced iPhone orientation handling (exclude iPad)
+          if (window.navigator.userAgent.match(/iPhone|iPod/i) && 
+              !window.navigator.userAgent.match(/iPad/i) &&
+              window.screen && window.screen.width <= 430) {
+            window.addEventListener('orientationchange', () => {
+              setTimeout(() => {
+                console.log('[iPhone] Handling orientation change');
+                // Force re-layout after orientation change
+                document.body.style.height = window.innerHeight + 'px';
+                setTimeout(() => {
+                  document.body.style.height = '';
+                }, 500);
+              }, 200);
+            });
+          }
+          
           // Prevent context menu on long press in PWA mode
           document.addEventListener('contextmenu', function(e) {
             e.preventDefault();

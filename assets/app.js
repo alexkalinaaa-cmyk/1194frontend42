@@ -1950,6 +1950,112 @@ window.addEventListener('resize', function(){ if(!editor.hasAttribute('hidden'))
     });
   }
   
+  // iPhone detection and UI optimization - specifically exclude iPads
+  function isIPhone() {
+    const userAgent = navigator.userAgent;
+    
+    // Explicitly check for iPhone/iPod and exclude iPad
+    const isIPhoneUA = /iPhone|iPod/.test(userAgent) && !/iPad/.test(userAgent);
+    
+    // Additional screen size check for iPhone (not iPad which is larger)
+    // iPhone screen sizes: iPhone SE (375x667), iPhone 12/13 Mini (375x812), 
+    // iPhone 12/13/14 (390x844), iPhone 14 Plus (428x926), iPhone 14 Pro Max (430x932)
+    const isIPhoneScreen = window.screen && 
+                          window.screen.width <= 430 && 
+                          window.screen.height <= 932 && 
+                          window.screen.width < window.screen.height; // Portrait aspect ratio
+    
+    // Make sure we're not on iPad (which would be 768px+ wide in portrait)
+    const isNotIPad = window.screen && window.screen.width < 768;
+    
+    const result = (isIPhoneUA || (isIPhoneScreen && isNotIPad));
+    console.log(`[Device Detection] iPhone: ${result}, UA: ${userAgent}, Screen: ${window.screen ? window.screen.width + 'x' + window.screen.height : 'unknown'}`);
+    
+    return result;
+  }
+  
+  function optimizeForIPhone() {
+    if (!isIPhone()) return;
+    
+    console.log('[iPhone] Optimizing UI for iPhone');
+    
+    // Change button text for iPhone
+    const exportBtn = $("#lib-export");
+    if (exportBtn) {
+      exportBtn.textContent = "PDF";
+      exportBtn.title = "Export PDF";
+    }
+    
+    const floorplansBtn = $("#btn-floorplans");
+    if (floorplansBtn) {
+      floorplansBtn.textContent = "Archivum";
+      floorplansBtn.title = "Floor Plans/Archivum";
+    }
+    
+    // Make New Report button smaller text
+    const newReportBtn = $("#job-create");
+    if (newReportBtn) {
+      newReportBtn.textContent = "New";
+      newReportBtn.title = "New Report";
+    }
+    
+    // Add iPhone class to body for additional styling hooks
+    document.body.classList.add('iphone-optimized');
+    
+    // Log viewport dimensions for debugging
+    console.log(`[iPhone] Viewport: ${window.innerWidth}x${window.innerHeight}, Screen: ${window.screen.width}x${window.screen.height}`);
+  }
+  
+  // Enhanced orientation lock for iPhone
+  function enforcePortraitMode() {
+    if (!isIPhone()) return;
+    
+    function checkOrientation() {
+      const isLandscape = window.innerWidth > window.innerHeight || 
+                         (window.screen && window.screen.orientation && 
+                          window.screen.orientation.angle && 
+                          Math.abs(window.screen.orientation.angle) === 90);
+      
+      if (isLandscape) {
+        console.log('[iPhone] Landscape detected, showing rotate message');
+        document.body.style.overflow = 'hidden';
+      } else {
+        console.log('[iPhone] Portrait mode confirmed');
+        document.body.style.overflow = '';
+      }
+    }
+    
+    // Check on load
+    checkOrientation();
+    
+    // Check on orientation change
+    window.addEventListener('orientationchange', () => {
+      setTimeout(checkOrientation, 100); // Delay to let orientation settle
+    });
+    
+    // Check on resize as backup
+    window.addEventListener('resize', checkOrientation);
+  }
+  
+  // Initialize iPhone optimizations
+  function initIPhoneOptimizations() {
+    optimizeForIPhone();
+    enforcePortraitMode();
+    
+    // Re-optimize when window resizes (in case of device rotation)
+    window.addEventListener('resize', () => {
+      setTimeout(optimizeForIPhone, 100);
+    });
+  }
+  
+  // Run iPhone optimizations immediately
+  initIPhoneOptimizations();
+  
+  // Also run when DOM is fully loaded (as backup)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initIPhoneOptimizations);
+  }
+
   // Initial button state
   updateNotesButtonState().catch(console.warn);
   updateUIControlsState().catch(console.warn);

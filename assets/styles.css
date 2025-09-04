@@ -987,8 +987,8 @@ img {
   border-color: var(--accent);
 }
 
-/* Responsive adjustments for smaller screens */
-@media (max-width: 768px) {
+/* Responsive adjustments for tablets (between iPhone and desktop) */
+@media (min-width: 431px) and (max-width: 768px) {
   .workspace-grid {
     grid-template-columns: 1fr;
     grid-template-rows: 200px 1fr;
@@ -1003,5 +1003,419 @@ img {
     flex-direction: column;
     gap: 8px;
     align-items: stretch;
+  }
+}
+
+/* ===== IPHONE PORTRAIT MODE OPTIMIZATION ===== */
+
+/* CSS-based orientation lock for iPhone only (not iPad) */
+@supports (-webkit-touch-callout: none) {
+  @media screen and (orientation: landscape) and (max-width: 430px) and (max-height: 932px) {
+    body::before {
+      content: "Please rotate your iPhone to portrait mode";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      text-align: center;
+      z-index: 99999;
+      padding: 20px;
+    }
+    
+    body > *:not(::before) {
+      display: none !important;
+    }
+  }
+}
+
+/* iPhone-specific viewport optimization (max iPhone Pro Max width) */
+@media (max-width: 430px) and (max-height: 932px) {
+  /* Force iPhone to use full viewport */
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+    position: relative;
+  }
+  
+  /* Adjust app header for iPhone */
+  .app-header {
+    padding: 8px 12px;
+    flex-wrap: nowrap;
+  }
+  
+  .app-header .title {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  
+  .app-header .meta {
+    display: none; /* Hide version on iPhone to save space */
+  }
+  
+  .actions {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  
+  /* Restructure workspace for iPhone portrait */
+  .workspace-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: 180px 1fr;
+    gap: 8px;
+    height: calc(100vh - 80px);
+  }
+  
+  .reports-sidebar {
+    max-height: 180px;
+    padding: 8px;
+  }
+  
+  .sidebar-header {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  
+  .sidebar-title {
+    font-size: 12px;
+  }
+  
+  /* Stack workspace controls vertically on iPhone */
+  .workspace-controls {
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+  }
+  
+  .controls-left {
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+  
+  .control-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  
+  .input-small {
+    width: 100%;
+  }
+  
+  .controls-right {
+    display: flex;
+    gap: 4px;
+    justify-content: space-between;
+    width: 100%;
+  }
+  
+  /* Optimize buttons for iPhone */
+  .btn {
+    min-width: auto;
+    min-height: 44px; /* iOS touch target */
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+  
+  .btn-small {
+    padding: 4px 8px;
+    font-size: 11px;
+    min-height: 32px;
+  }
+  
+  /* iPhone-specific button sizing */
+  #btn-floorplans {
+    flex: 1;
+    max-width: 100px;
+  }
+  
+  #lib-export {
+    flex: 1;
+    max-width: 60px;
+  }
+  
+  #btn-notes {
+    width: 44px;
+    padding: 8px;
+    flex-shrink: 0;
+  }
+  
+  /* Image cards optimization for iPhone */
+  .board-compact {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 6px;
+    padding: 6px;
+  }
+  
+  .tile.card {
+    height: 160px;
+  }
+  
+  .tile.card img {
+    height: 160px;
+  }
+  
+  /* Location row optimization */
+  .location-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .location-control {
+    width: 100%;
+  }
+  
+  #locate-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+  
+  /* Modal optimizations for iPhone */
+  .modal .card {
+    margin: 10px;
+    max-width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px);
+  }
+  
+  .sheet.small {
+    width: calc(100vw - 20px);
+  }
+  
+  /* Annotation editor iPhone layout */
+  .editor-grid {
+    width: calc(100vw - 20px);
+    max-height: calc(100vh - 40px);
+  }
+  
+  /* Stack annotation image and notes vertically on iPhone */
+  .stage-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .stage {
+    width: 100%;
+    height: 300px;
+  }
+  
+  .notes {
+    width: 100%;
+    height: 200px;
+  }
+  
+  .notes textarea {
+    min-height: 180px;
+  }
+  
+  /* Toolbar optimization for iPhone */
+  .toolbar.thin {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 6px;
+  }
+  
+  .toolbar.thin .left {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .toolbar.thin .right {
+    width: 100%;
+    justify-content: center;
+    border-top: 1px solid var(--border);
+    padding-top: 6px;
+  }
+  
+  /* Tool buttons for iPhone touch */
+  .tool {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 8px;
+  }
+  
+  .shape-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  /* Storage indicator hide on iPhone to save space */
+  .storage-indicator {
+    display: none;
+  }
+  
+  /* Floor plans modal optimization */
+  .floorplans-archivum-sheet {
+    width: calc(100vw - 10px);
+  }
+  
+  .floorplans-archivum-content {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 8px;
+  }
+  
+  .archivum-section {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-left: 0;
+    padding-top: 12px;
+  }
+  
+  /* Floor plan viewer optimization */
+  .floorplan-viewer-grid {
+    width: calc(100vw - 10px);
+  }
+  
+  .floor-viewer-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 200px;
+  }
+  
+  .floor-card-tray {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-left: 0;
+    padding-top: 8px;
+  }
+  
+  .floor-card-tray-content {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 4px;
+    max-height: 180px;
+  }
+  
+  .tray-card {
+    height: 80px;
+    padding: 4px;
+  }
+  
+  .tray-card-image {
+    height: 50px;
+  }
+  
+  /* Sign modal optimization */
+  .signpad {
+    width: calc(100vw - 20px);
+  }
+  
+  .signpad canvas {
+    height: 300px;
+  }
+  
+  /* Clear all data button positioning for iPhone */
+  .clear-all-btn {
+    bottom: 10px;
+    right: 10px;
+    font-size: 10px;
+    padding: 6px 8px;
+  }
+}
+
+/* iPhone-specific styles using JavaScript-added class */
+.iphone-optimized .app-header {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.iphone-optimized .btn {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Additional iPhone-specific overrides with high specificity */
+@media (max-width: 430px) and (max-height: 932px) {
+  /* Ensure modal inputs are properly sized */
+  .input {
+    max-width: 100% !important;
+    font-size: 16px !important; /* Prevent zoom on focus in iOS */
+  }
+  
+  /* Fix job details modal inputs */
+  #job-name-input, #job-code-input {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: 16px !important;
+  }
+  
+  /* Optimize settings inputs for iPhone */
+  #set-occupation, #set-phone {
+    font-size: 16px !important;
+    width: 100% !important;
+  }
+  
+  /* Location input optimization */
+  .location-input {
+    font-size: 16px !important;
+  }
+  
+  /* Note editor optimization */
+  #note-name, #note-content {
+    font-size: 16px !important;
+  }
+  
+  /* Prevent horizontal scroll on iPhone */
+  * {
+    max-width: 100vw !important;
+  }
+  
+  .modal {
+    padding: 5px !important;
+  }
+  
+  /* Ensure buttons don't overflow */
+  .controls-right {
+    flex-wrap: wrap !important;
+  }
+  
+  /* Grid adjustments for iPhone */
+  .grid2 {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  
+  /* Override min-width constraints for iPhone */
+  .btn {
+    min-width: auto !important;
+  }
+  
+  .pin-popover {
+    min-width: 250px !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+  
+  .textbox {
+    min-width: 120px !important;
+    max-width: calc(100vw - 40px) !important;
+  }
+  
+  .plan-counter {
+    min-width: 60px !important;
+  }
+  
+  /* Fix any iPad-first styles that might interfere */
+  @supports (-webkit-touch-callout: none) {
+    .btn {
+      min-width: auto !important;
+      min-height: 44px !important;
+    }
+    
+    .tool {
+      min-width: 40px !important;
+      min-height: 40px !important;
+    }
+    
+    .workspace-grid {
+      grid-template-columns: 1fr !important;
+      grid-template-rows: 180px 1fr !important;
+    }
   }
 }
