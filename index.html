@@ -52,10 +52,10 @@
           console.log('[PWA] Running in standalone mode');
           document.body.classList.add('pwa-mode');
           
-          // Allow zoom on floor plan canvas, prevent bounce elsewhere
+          // Allow zoom on entire floor plan viewer, prevent bounce elsewhere
           document.addEventListener('touchmove', function(e) {
-            // Don't prevent default on floor plan canvas - allow native zoom
-            if (e.target.closest('#floor-canvas-container')) {
+            // Don't prevent default on entire floor plan viewer - allow native zoom/pan
+            if (e.target.closest('#floorplan-viewer')) {
               return;
             }
             // Prevent zoom/scroll bounce on other PWA elements
