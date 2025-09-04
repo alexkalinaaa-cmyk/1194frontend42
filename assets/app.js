@@ -153,11 +153,11 @@
     const redoBtn = $("#sig-redo");
     
     if (undoBtn) {
-      undoBtn.style.display = (sigCurrentHistoryIndex > 0) ? "inline-block" : "none";
+      undoBtn.style.opacity = (sigCurrentHistoryIndex > 0) ? "1" : "0.3";
     }
     
     if (redoBtn) {
-      redoBtn.style.display = (sigCurrentHistoryIndex < sigUndoHistory.length - 1) ? "inline-block" : "none";
+      redoBtn.style.opacity = (sigCurrentHistoryIndex < sigUndoHistory.length - 1) ? "1" : "0.3";
     }
   }
   
@@ -467,21 +467,21 @@
         if(v){ 
           S.occ.value=v.occ||""; 
           S.phone.value=v.phone||""; 
-          S.theme.value=v.theme||"dark";
+          S.theme.value=v.theme||"blue";
           // Apply saved theme on startup
-          applyTheme(v.theme||"dark");
+          applyTheme(v.theme||"blue");
         } else {
-          // Default to dark theme
-          applyTheme("dark");
+          // Default to JL Ocean Blue theme
+          applyTheme("blue");
         }
       }catch(_){
-        applyTheme("dark");
+        applyTheme("blue");
       }
     }).catch(_=>{
-      applyTheme("dark");
+      applyTheme("blue");
     });
   } else {
-    applyTheme("dark");
+    applyTheme("blue");
   }
 
   // Board + Editor
@@ -599,14 +599,14 @@
     const undoBtn = $("#btn-undo");
     const redoBtn = $("#btn-redo");
     
-    // Show/hide undo button
+    // Update undo button opacity
     if (undoBtn) {
-      undoBtn.style.display = (currentHistoryIndex > 0) ? "inline-block" : "none";
+      undoBtn.style.opacity = (currentHistoryIndex > 0) ? "1" : "0.3";
     }
     
-    // Show/hide redo button (only show if there's something to redo)
+    // Update redo button opacity (only active if there's something to redo)
     if (redoBtn) {
-      redoBtn.style.display = (currentHistoryIndex < undoHistory.length - 1) ? "inline-block" : "none";
+      redoBtn.style.opacity = (currentHistoryIndex < undoHistory.length - 1) ? "1" : "0.3";
     }
   }
   
