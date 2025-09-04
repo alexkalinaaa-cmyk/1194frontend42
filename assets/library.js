@@ -63,6 +63,65 @@
     return await reverseGeocodeEnhanced(lat, lng);
   }
 
+  // Auto-grab location for new reports
+  async function autoGrabLocationForNewReport() {
+    try {
+      // Check if geolocation is supported
+      if (!('geolocation' in navigator)) {
+        console.log('[Auto-Location] Geolocation not supported, skipping auto-grab');
+        return;
+      }
+
+      // Check permissions first (non-blocking)
+      let hasPermission = true;
+      try {
+        if ('permissions' in navigator) {
+          const permission = await navigator.permissions.query({ name: 'geolocation' });
+          if (permission.state === 'denied') {
+            console.log('[Auto-Location] Location permission denied, skipping auto-grab');
+            return;
+          }
+        }
+      } catch (e) {
+        // Older browsers, continue anyway
+        console.log('[Auto-Location] Permission check not supported, trying anyway');
+      }
+
+      // Attempt to get location with short timeout (non-intrusive)
+      console.log('[Auto-Location] Attempting to auto-grab location for new report');
+      
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          { 
+            enableHighAccuracy: false, // Use network/wifi for speed
+            timeout: 5000, // Quick timeout so it doesn't delay UX
+            maximumAge: 300000 // Allow 5-minute cached location
+          }
+        );
+      });
+
+      const { latitude, longitude, accuracy } = position.coords;
+      console.log(`[Auto-Location] Got location: ${latitude}, ${longitude} (±${Math.round(accuracy)}m)`);
+
+      // Get address from coordinates
+      const address = await reverseGeocodeEnhanced(latitude, longitude);
+      console.log(`[Auto-Location] Address resolved: ${address}`);
+
+      // Set location in the input field
+      const locationInput = document.getElementById('location-field');
+      if (locationInput) {
+        locationInput.value = address;
+        console.log('[Auto-Location] Location automatically set for new report');
+      }
+
+    } catch (error) {
+      // Silent fail - don't bother the user with location errors during auto-grab
+      console.log('[Auto-Location] Auto-grab failed (silent):', error.message);
+    }
+  }
+
   // API Configuration - Direct connection to Render backend
   const RENDER_BACKEND_URL = 'https://one193fbackend432.onrender.com';
 
@@ -4768,6 +4827,9 @@
     await renderUnifiedList();
     await renderCards();
     await renderPDFCards();
+    
+    // Auto-grab location for new report
+    await autoGrabLocationForNewReport();
     
     // Update UI controls after creating new report
     if(window.updateUIControlsState) await window.updateUIControlsState();

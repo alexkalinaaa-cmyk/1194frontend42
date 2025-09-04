@@ -1703,9 +1703,16 @@
     console.log(`[iOS Debug] Touch start: ${e.touches.length} touches, tool: ${currentTool}`);
     touchState.lastTouches = Array.from(e.touches);
     
-    // On iOS, only handle pindrop tool, let native gestures handle everything else
+    // On iOS, NEVER interfere with multi-touch gestures (pinch-to-zoom)
     if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-      if (e.touches.length === 1 && currentTool === 'pindrop') {
+      // For multi-touch (pinch), do absolutely nothing - let iOS handle natively
+      if (e.touches.length > 1) {
+        console.log(`[iOS Debug] Multi-touch detected (${e.touches.length}), letting iOS handle natively`);
+        return;
+      }
+      
+      // Only handle single touch for specific tools
+      if (e.touches.length === 1 && (currentTool === 'pindrop' || currentTool === 'pan')) {
         const touch = e.touches[0];
         const canvas = e.target;
         
@@ -1724,7 +1731,7 @@
         
         handleCanvasMouseDown(mouseEvent);
       }
-      return; // Let iOS handle all other touch interactions natively
+      return; // Let iOS handle all other interactions natively
     }
     
     // Non-iOS device handling (original logic)
@@ -1750,9 +1757,16 @@
   }
   
   function handleCanvasTouchMove(e) {
-    // On iOS, minimal interference with native gestures
+    // On iOS, NEVER interfere with multi-touch gestures (pinch-to-zoom)
     if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-      if (e.touches.length === 1 && currentTool === 'pindrop') {
+      // For multi-touch (pinch), do absolutely nothing - let iOS handle natively
+      if (e.touches.length > 1) {
+        console.log(`[iOS Debug] Multi-touch move detected (${e.touches.length}), letting iOS handle natively`);
+        return;
+      }
+      
+      // Only handle single touch for specific tools
+      if (e.touches.length === 1 && (currentTool === 'pindrop' || currentTool === 'pan')) {
         const touch = e.touches[0];
         const canvas = e.target;
         
@@ -1799,9 +1813,18 @@
   function handleCanvasTouchEnd(e) {
     console.log(`[iOS Debug] Touch end: ${e.touches.length} touches remaining`);
     
-    // On iOS, minimal interference
+    // On iOS, NEVER interfere with multi-touch gestures (pinch-to-zoom)
     if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
-      if (e.touches.length === 0 && currentTool === 'pindrop') {
+      // For multi-touch end, do absolutely nothing - let iOS handle natively
+      if (touchState.lastTouches.length > 1) {
+        console.log(`[iOS Debug] Multi-touch end detected, letting iOS handle natively`);
+        touchState.lastTouches = [];
+        touchState.lastDistance = 0;
+        return;
+      }
+      
+      // Only handle single touch end for specific tools
+      if (e.touches.length === 0 && (currentTool === 'pindrop' || currentTool === 'pan')) {
         const canvas = e.target;
         const lastTouch = touchState.lastTouches[0];
         
