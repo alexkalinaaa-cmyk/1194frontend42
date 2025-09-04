@@ -28,7 +28,27 @@
   // Enhanced reverse geocoding with multiple service fallbacks
   async function reverseGeocodeEnhanced(lat, lng) {
     const services = [
-      // Primary: OpenStreetMap Nominatim with higher zoom for better precision
+      // Primary: Google Maps API via backend
+      async () => {
+        const response = await fetch(`${RENDER_BACKEND_URL}/api/google-geocode?lat=${lat}&lng=${lng}`, {
+          headers: {
+            'X-API-Key': 'jl-annotator-secure-key-2024'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.address && !data.fallback) {
+            console.log('[Google Maps] Successfully geocoded:', data.address);
+            return data.address;
+          } else if (data && data.fallback) {
+            throw new Error('Google Maps returned fallback coordinates');
+          }
+        }
+        throw new Error('Google Maps geocoding failed');
+      },
+      
+      // Fallback 1: OpenStreetMap Nominatim with higher zoom for better precision
       async () => {
         const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&zoom=18`, {
           headers: {
@@ -623,7 +643,7 @@
           locationName: null 
         },
         app: { 
-          name: "JL Field Report", 
+          name: "JL Field Reports", 
           version: window.JL_APP_VERSION || null, 
           environment: window.location?.hostname || null 
         },
@@ -695,7 +715,7 @@
       alert(errorMessage);
     } finally {
       if (btn) {
-        btn.textContent = 'Send to SharePoint';
+        btn.textContent = 'Send to Dataverse';
         btn.disabled = false;
       }
     }
@@ -2792,9 +2812,9 @@
     const cleanFilename = filename.replace(/\.pdf$/i, '') + '.pdf';
     doc.setProperties({
       title: cleanFilename,
-      subject: `JL Field Report - ${reportId}`,
-      author: 'JL Field Report',
-      creator: 'JL Field Report App'
+      subject: `JL Field Reports - ${reportId}`,
+      author: 'JL Field Reports',
+      creator: 'JL Field Reports App'
     });
     
     // Load user data from MSAL and optional settings from IndexedDB
@@ -4340,8 +4360,7 @@
         <div class="pdf-viewer-header">
           <div class="pdf-viewer-title">📄 ${pdf.filename}</div>
           <div class="pdf-viewer-controls">
-            <button id="pdf-sharepoint" class="btn btn-blue">Send to SharePoint</button>
-            <button id="pdf-download" class="btn">Download</button>
+            <button id="pdf-sharepoint" class="btn btn-blue">Send to Dataverse</button>
             <button id="pdf-close" class="btn">Close</button>
           </div>
         </div>
@@ -4365,7 +4384,7 @@
           renderPDFWithPDFJS(pdfUrl, modal).catch(error => {
             console.error('[iOS PDF] Error in PDF.js rendering:', error);
             modal.querySelector('#pdf-canvas-container').innerHTML = 
-              `<p style="text-align: center; padding: 20px; color: #e74c3c;">Error loading PDF preview on iOS. Use download button to view the file.</p>`;
+              `<p style="text-align: center; padding: 20px; color: #e74c3c;">Error loading PDF preview on iOS. Please try refreshing or use a different browser.</p>`;
           });
         } else {
           // Desktop: Use iframe (existing functionality)
@@ -4454,13 +4473,8 @@
                   e.stopPropagation();
                   console.log(`Download intercepted at position: ${pos.name}`);
                   
-                  // Trigger our custom download instead
-                  const customDownloadBtn = modal.querySelector('#pdf-download');
-                  if (customDownloadBtn) {
-                    customDownloadBtn.click();
-                  } else {
-                    console.warn('Custom download button not found');
-                  }
+                  // Download functionality removed - preventing default browser behavior
+                  console.log('PDF download intercepted and blocked');
                   return false;
                 });
                 
@@ -4485,7 +4499,7 @@
               topBarIntercept.style.height = '48px';  // Toolbar height
               topBarIntercept.style.zIndex = '1000';  // Lower priority than specific overlays
               topBarIntercept.style.cursor = 'pointer';
-              topBarIntercept.title = 'PDF toolbar area - use download button below';
+              topBarIntercept.title = 'PDF toolbar area';
               
               topBarIntercept.addEventListener('click', (e) => {
                 // Only intercept if click is in the right portion (likely download area)
@@ -4542,12 +4556,12 @@
       } else {
         // Fallback for other data formats
         modal.querySelector('#pdf-canvas-container').innerHTML = 
-          `<p>PDF preview not available. Use download button to view the file.</p>`;
+          `<p>PDF preview not available. Please try refreshing or use a different browser.</p>`;
       }
     } catch(e) {
       console.error('Failed to load PDF viewer:', e);
       modal.querySelector('#pdf-canvas-container').innerHTML = 
-        `<p>Error loading PDF preview. Use download button to view the file.</p>`;
+        `<p>Error loading PDF preview. Please try refreshing or use a different browser.</p>`;
     }
     
     // Event listeners
@@ -4555,12 +4569,6 @@
       await uploadToSharePoint(pdf);
     });
 
-    modal.querySelector('#pdf-download').addEventListener('click', () => {
-      const link = document.createElement('a');
-      link.href = pdf.blobUrl || pdf.dataUrl; // Use blob URL or fallback to data URL
-      link.download = pdf.filename;
-      link.click();
-    });
     
     modal.querySelector('#pdf-close').addEventListener('click', () => {
       document.body.removeChild(modal);

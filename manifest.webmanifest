@@ -1,6 +1,6 @@
 {
-  "name": "JL Field Report",
-  "short_name": "Field Report",
+  "name": "JL Field Reports",
+  "short_name": "Field Reports",
   "description": "iPad-first field report annotation and PDF generation tool",
   "start_url": "./",
   "display": "standalone",

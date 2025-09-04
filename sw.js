@@ -1,4 +1,4 @@
-// JL Field Report Service Worker
+// JL Field Reports Service Worker
 // Cache-first strategy for static assets, network-first for API calls
 
 const CACHE_NAME = 'jl-annotator-v1';

@@ -1982,20 +1982,20 @@ window.addEventListener('resize', function(){ if(!editor.hasAttribute('hidden'))
     // Change button text for iPhone
     const exportBtn = $("#lib-export");
     if (exportBtn) {
-      exportBtn.textContent = "PDF";
-      exportBtn.title = "Export PDF";
+      exportBtn.textContent = "Create PDF";
+      exportBtn.title = "Create PDF";
     }
     
     const floorplansBtn = $("#btn-floorplans");
     if (floorplansBtn) {
-      floorplansBtn.textContent = "Archivum";
-      floorplansBtn.title = "Floor Plans/Archivum";
+      floorplansBtn.textContent = "Floorplans/Report";
+      floorplansBtn.title = "Floorplans/Report";
     }
     
     // Make New Report button smaller text
     const newReportBtn = $("#job-create");
     if (newReportBtn) {
-      newReportBtn.textContent = "New";
+      newReportBtn.textContent = "New Report";
       newReportBtn.title = "New Report";
     }
     
@@ -2070,17 +2070,13 @@ window.addEventListener('resize', function(){ if(!editor.hasAttribute('hidden'))
     
     // Setup iPhone location input to use the same per-report-ID system
     iPhoneLocationField.addEventListener('input', async function() {
-      // Use the same logic as library.js for per-report-ID location saving
-      if (window.Library && typeof window.Library.getCur === 'function') {
-        const currentReportId = window.Library.getCur();
-        if (currentReportId && window.Library.saveLocation) {
-          await window.Library.saveLocation(currentReportId, iPhoneLocationField.value);
-          console.log('[iPhone] Saved location for report:', currentReportId);
-        }
-      }
-      
-      // Also update the original field to keep UI in sync
+      // Update the original field first to keep UI in sync
       originalLocationField.value = iPhoneLocationField.value;
+      
+      // Trigger the input event on the original field to ensure proper saving
+      originalLocationField.dispatchEvent(new Event('input', { bubbles: true }));
+      
+      console.log('[iPhone] Synced location to original field:', iPhoneLocationField.value);
     });
     
     // Setup iPhone locate button with full geolocation functionality
@@ -2126,72 +2122,85 @@ window.addEventListener('resize', function(){ if(!editor.hasAttribute('hidden'))
         iPhoneLocateBtn.textContent = '⏳';
         let address = null;
         
-        // Try OpenStreetMap Nominatim first (same as library.js)
+        // Try Google Maps API first via backend
         try {
-          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=18`, {
-            headers: { 'User-Agent': 'JL-Field-Reports-App/1.0' }
+          const response = await fetch(`https://one193fbackend432.onrender.com/api/google-geocode?lat=${latitude}&lng=${longitude}`, {
+            headers: { 'X-API-Key': 'jl-annotator-secure-key-2024' }
           });
           
           if (response.ok) {
             const data = await response.json();
-            if (data && data.display_name) {
-              const addr = data.address;
-              if (addr) {
-                const addressParts = [];
-                
-                // Build street address
-                if (addr.house_number && addr.road) {
-                  addressParts.push(`${addr.house_number} ${addr.road}`);
-                } else if (addr.road) {
-                  addressParts.push(addr.road);
-                }
-                
-                // Add city/suburb
-                if (addr.city) {
-                  addressParts.push(addr.city);
-                } else if (addr.town) {
-                  addressParts.push(addr.town);
-                } else if (addr.suburb) {
-                  addressParts.push(addr.suburb);
-                }
-                
-                // Add state/country
-                if (addr.state) {
-                  addressParts.push(addr.state);
-                }
-                
-                address = addressParts.join(', ');
-              }
+            if (data && data.address && !data.fallback) {
+              console.log('[iPhone] Google Maps geocoded:', data.address);
+              address = data.address;
+            } else if (data && data.fallback) {
+              throw new Error('Google Maps returned fallback');
             }
+          } else {
+            throw new Error('Google Maps API request failed');
           }
         } catch (error) {
-          console.warn('[iPhone] Nominatim geocoding failed:', error);
+          console.warn('[iPhone] Google Maps geocoding failed, trying fallback:', error);
+          
+          // Fallback: OpenStreetMap Nominatim
+          try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1&zoom=18`, {
+              headers: { 'User-Agent': 'JL-Field-Reports-App/1.0' }
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data && data.display_name) {
+                const addr = data.address;
+                if (addr) {
+                  const addressParts = [];
+                  
+                  // Build street address
+                  if (addr.house_number && addr.road) {
+                    addressParts.push(`${addr.house_number} ${addr.road}`);
+                  } else if (addr.road) {
+                    addressParts.push(addr.road);
+                  }
+                  
+                  // Add city/suburb
+                  if (addr.city) {
+                    addressParts.push(addr.city);
+                  } else if (addr.town) {
+                    addressParts.push(addr.town);
+                  } else if (addr.suburb) {
+                    addressParts.push(addr.suburb);
+                  }
+                  
+                  // Add state/country
+                  if (addr.state) {
+                    addressParts.push(addr.state);
+                  }
+                  
+                  address = addressParts.join(', ');
+                }
+              }
+            }
+          } catch (nominatimError) {
+            console.warn('[iPhone] Nominatim geocoding also failed:', nominatimError);
+          }
         }
         
         if (address) {
           iPhoneLocationField.value = address;
           originalLocationField.value = address;
           
-          // Save to current report
-          if (window.Library && window.Library.getCur && window.Library.saveLocation) {
-            const currentReportId = window.Library.getCur();
-            if (currentReportId) {
-              await window.Library.saveLocation(currentReportId, address);
-              console.log('[iPhone] Saved geocoded location for report:', currentReportId);
-            }
-          }
+          // Trigger the input event on original field to ensure proper saving
+          originalLocationField.dispatchEvent(new Event('input', { bubbles: true }));
+          console.log('[iPhone] Set geocoded location:', address);
         } else {
           // Fallback to coordinates if reverse geocoding fails
           const coordsAddress = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
           iPhoneLocationField.value = coordsAddress;
           originalLocationField.value = coordsAddress;
           
-          if (window.Library && window.Library.getCur && window.Library.saveLocation) {
-            const currentReportId = window.Library.getCur();
-            if (currentReportId) {
-              await window.Library.saveLocation(currentReportId, coordsAddress);
-            }
-          }
+          // Trigger the input event on original field to ensure proper saving
+          originalLocationField.dispatchEvent(new Event('input', { bubbles: true }));
+          console.log('[iPhone] Set coordinates as fallback:', coordsAddress);
         }
         
       } catch (error) {

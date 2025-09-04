@@ -522,7 +522,7 @@ img {
 .jobs-list { display:grid; gap:6px; }
 .cards-pane { display:grid; gap:10px; align-content:start; }
 .cards-header { display:flex; align-items:center; justify-content:space-between; }
-.storage-indicator { display:flex; flex-direction:column; gap:4px; font-size:12px; }
+.storage-indicator { display:flex; flex-direction:column; gap:4px; font-size:12px; min-width: 100px; }
 .storage-bar { width:120px; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
 .storage-fill { height:100%; background:var(--green); transition:width 0.3s ease; }
 .storage-fill.warning { background:#f59e0b; }
@@ -861,6 +861,14 @@ img {
   gap: 16px;
 }
 
+/* Reference layout styling - horizontal arrangement for non-iPhone devices */
+.original-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .control-group {
   display: flex;
   align-items: center;
@@ -870,8 +878,8 @@ img {
 }
 
 .input-small {
-  width: 120px;
-  padding: 4px 8px;
+  width: 140px;
+  padding: 6px 8px;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg);
@@ -1091,7 +1099,8 @@ img {
   .workspace-main {
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    max-height: calc(100vh - 180px) !important;
+    max-height: calc(100vh - 140px) !important;
+    min-height: calc(100vh - 160px) !important;
   }
   
   /* Prevent scrolling in other UI elements */
@@ -1411,11 +1420,19 @@ img {
   /* Floor plan viewer optimization */
   .floorplan-viewer-grid {
     width: calc(100vw - 10px);
+    max-height: calc(100vh - 40px);
+  }
+  
+  /* Enable pinch-zoom on iPhone floor plan canvas */
+  .floor-canvas-container canvas {
+    touch-action: pan-x pan-y pinch-zoom !important;
   }
   
   .floor-viewer-content {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr 200px;
+    grid-template-rows: 1fr 160px;
+    min-height: 400px;
+    max-height: calc(100vh - 120px);
   }
   
   .floor-card-tray {
@@ -1426,18 +1443,24 @@ img {
   }
   
   .floor-card-tray-content {
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-    gap: 4px;
-    max-height: 180px;
+    grid-template-columns: repeat(auto-fit, minmax(70px, 70px));
+    gap: 6px;
+    max-height: 160px;
+    justify-content: start;
   }
   
   .tray-card {
-    height: 80px;
-    padding: 4px;
+    height: 70px;
+    width: 70px;
+    padding: 3px;
+    min-width: 70px;
+    max-width: 70px;
+    flex-shrink: 0;
   }
   
   .tray-card-image {
-    height: 50px;
+    height: 45px;
+    margin-bottom: 2px;
   }
   
   /* Sign modal optimization */
