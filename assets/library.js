@@ -1334,18 +1334,34 @@
       }
     }
 
-    // Restore scroll position after DOM updates - iPhone needs longer delay
+    // Enhanced iPhone scroll position restoration
     const restoreScroll = () => {
       if (UI.unifiedList && scrollPosition > 0) {
+        console.log(`[Scroll Debug] Restoring scroll position: ${scrollPosition}px, current: ${UI.unifiedList.scrollTop}px`);
         UI.unifiedList.scrollTop = scrollPosition;
+        // Force scroll update on iPhone
+        if (/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
+          UI.unifiedList.style.transform = 'translateZ(0)'; // Force GPU layer
+          setTimeout(() => UI.unifiedList.style.transform = '', 10);
+        }
       }
     };
     
-    // Try multiple times with different delays to ensure it works on iPhone
-    setTimeout(restoreScroll, 0);
-    setTimeout(restoreScroll, 10);
-    setTimeout(restoreScroll, 50);
-    setTimeout(restoreScroll, 100);
+    // Aggressive scroll restoration for iPhone with longer delays
+    const isIOS = /(iPhone|iPad|iPod)/i.test(navigator.userAgent);
+    if (isIOS) {
+      // iPhone needs more time and attempts
+      setTimeout(restoreScroll, 0);
+      setTimeout(restoreScroll, 50);
+      setTimeout(restoreScroll, 150);
+      setTimeout(restoreScroll, 300);
+      setTimeout(restoreScroll, 500);
+    } else {
+      // Non-iPhone devices
+      setTimeout(restoreScroll, 0);
+      setTimeout(restoreScroll, 10);
+      setTimeout(restoreScroll, 50);
+    }
 
     // Note: Unattached Report IDs section removed - all Report IDs are now created with job names
   }
@@ -4806,6 +4822,10 @@
   });
 
   on(UI.btnCreate, "click", async function(){
+    // Auto-grab location FIRST, before creating report
+    console.log('[Auto-Location] Attempting to grab location before creating report...');
+    await autoGrabLocationForNewReport();
+    
     // Generate both job name and report ID
     const reportId = generateJobId();
     const nameId = "N" + generateJobId().slice(0, 8);
@@ -4830,9 +4850,6 @@
     await renderUnifiedList();
     await renderCards();
     await renderPDFCards();
-    
-    // Auto-grab location for new report
-    await autoGrabLocationForNewReport();
     
     // Update UI controls after creating new report
     if(window.updateUIControlsState) await window.updateUIControlsState();

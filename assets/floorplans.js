@@ -1336,11 +1336,15 @@
     canvas.addEventListener('mouseup', handleCanvasMouseUp);
     canvas.addEventListener('wheel', handleCanvasWheel);
     
-    // Add touch events for all devices - let CSS handle zoom behavior
-    console.log(`[iOS DEBUG] Adding touch events to canvas element: ${canvas.id}, tagName: ${canvas.tagName}`);
-    canvas.addEventListener('touchstart', handleCanvasTouchStart);
-    canvas.addEventListener('touchmove', handleCanvasTouchMove);
-    canvas.addEventListener('touchend', handleCanvasTouchEnd);
+    // NUCLEAR iOS fix - only add touch events for NON-iOS devices
+    if (!/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
+      console.log(`[DEBUG] Adding touch events to canvas element: ${canvas.id}, tagName: ${canvas.tagName}`);
+      canvas.addEventListener('touchstart', handleCanvasTouchStart);
+      canvas.addEventListener('touchmove', handleCanvasTouchMove);
+      canvas.addEventListener('touchend', handleCanvasTouchEnd);
+    } else {
+      console.log(`[iOS NUCLEAR] Skipping ALL touch event handlers for iOS - pure native zoom`);
+    }
   }
   
   function setupToolControls() {

@@ -1453,17 +1453,14 @@ button[data-floor-tool].active,
     top: 80px;
   }
   
-  /* Enable pinch-zoom on iPhone floor plan viewer */
-  #floorplan-viewer {
-    touch-action: auto !important;
-  }
-  
-  #floorplan-viewer .floor-canvas-container {
-    touch-action: auto !important;
-  }
-  
+  /* NUCLEAR iOS zoom fix - remove ALL touch restrictions */
+  #floorplan-viewer,
+  #floorplan-viewer *,
+  #floorplan-viewer canvas,
+  #floorplan-viewer .floor-canvas-container,
   #floorplan-viewer .floor-canvas-container canvas {
-    touch-action: auto !important;
+    touch-action: manipulation !important;
+    -webkit-touch-callout: default !important;
     -webkit-user-select: none !important;
     user-select: none !important;
   }
