@@ -1336,10 +1336,12 @@
     canvas.addEventListener('mouseup', handleCanvasMouseUp);
     canvas.addEventListener('wheel', handleCanvasWheel);
     
-    // Touch events for mobile
-    canvas.addEventListener('touchstart', handleCanvasTouchStart);
-    canvas.addEventListener('touchmove', handleCanvasTouchMove);
-    canvas.addEventListener('touchend', handleCanvasTouchEnd);
+    // Only add touch events if NOT on iOS to allow native zoom
+    if (!/(iPhone|iPad|iPod)/i.test(navigator.userAgent)) {
+      canvas.addEventListener('touchstart', handleCanvasTouchStart);
+      canvas.addEventListener('touchmove', handleCanvasTouchMove);
+      canvas.addEventListener('touchend', handleCanvasTouchEnd);
+    }
   }
   
   function setupToolControls() {

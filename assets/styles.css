@@ -1434,15 +1434,15 @@ img {
   
   /* Floor plan viewer optimization */
   .floorplan-viewer-grid {
-    width: calc(100vw - 20px);
-    max-width: calc(100vw - 20px);
-    height: calc(100vh - 120px);
-    max-height: calc(100vh - 120px);
-    margin: 10px;
+    width: calc(100vw - 60px);
+    max-width: calc(100vw - 60px);
+    height: calc(100vh - 220px);
+    max-height: calc(100vh - 220px);
+    margin: 0;
     left: 50%;
     transform: translateX(-50%);
     position: fixed;
-    top: 60px;
+    top: 80px;
   }
   
   /* Enable pinch-zoom on iPhone floor plan canvas */
@@ -1452,17 +1452,17 @@ img {
   
   .floor-viewer-content {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr 120px;
-    height: calc(100vh - 160px);
-    max-height: calc(100vh - 160px);
-    min-height: 250px;
+    grid-template-rows: 1fr 100px;
+    height: calc(100vh - 260px);
+    max-height: calc(100vh - 260px);
+    min-height: 200px;
     overflow: hidden;
     padding: 4px;
   }
   
   .floor-canvas-container {
-    min-height: 200px !important;
-    max-height: calc(100vh - 280px) !important;
+    min-height: 150px !important;
+    max-height: calc(100vh - 380px) !important;
     margin: 0;
     width: 100%;
   }
