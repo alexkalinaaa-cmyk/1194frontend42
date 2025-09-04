@@ -52,8 +52,13 @@
           console.log('[PWA] Running in standalone mode');
           document.body.classList.add('pwa-mode');
           
-          // Prevent zoom/scroll bounce on iOS PWAs
+          // Allow zoom on floor plan canvas, prevent bounce elsewhere
           document.addEventListener('touchmove', function(e) {
+            // Don't prevent default on floor plan canvas - allow native zoom
+            if (e.target.closest('#floor-canvas-container')) {
+              return;
+            }
+            // Prevent zoom/scroll bounce on other PWA elements
             if (e.scale !== 1) {
               e.preventDefault();
             }
@@ -465,16 +470,16 @@
       <div class="left">
         <div class="plan-navigation">
           <button id="plan-prev" class="btn" title="Previous Plan">‹</button>
+          <div id="plan-counter" class="plan-counter">1 of 5</div>
           <button id="plan-next" class="btn" title="Next Plan">›</button>
         </div>
         <div class="plan-tools">
           <button data-floor-tool="pindrop" class="btn tool" title="Drop Pin">📍</button>
           <button data-floor-tool="eraser" class="btn tool" title="Erase Pin">🗑</button>
         </div>
-        <div id="plan-badge" class="plan-badge">23 plans</div>
       </div>
       <div class="right">
-        <div id="plan-counter" class="plan-counter">1 of 5</div>
+        <div id="plan-badge" class="plan-badge">23 plans</div>
         <button id="floor-viewer-close" class="btn">Close</button>
       </div>
     </div>
