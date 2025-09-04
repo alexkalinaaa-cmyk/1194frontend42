@@ -1462,17 +1462,17 @@ img {
   
   .floor-viewer-content {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr 100px;
+    grid-template-rows: auto 1fr;
     height: calc(100vh - 260px);
     max-height: calc(100vh - 260px);
     min-height: 200px;
-    overflow: hidden;
+    overflow: visible;
     padding: 4px;
   }
   
   .floor-canvas-container {
     min-height: 150px !important;
-    max-height: calc(100vh - 380px) !important;
+    max-height: calc(100vh - 565px) !important;
     margin: 0;
     width: 100%;
   }
@@ -1480,6 +1480,8 @@ img {
   .floor-card-tray {
     border-left: none;
     border-top: 1px solid var(--border);
+    overflow-y: auto;
+    max-height: 300px;
     padding-left: 0;
     padding-top: 8px;
   }
