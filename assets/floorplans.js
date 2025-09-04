@@ -1732,10 +1732,8 @@
       touchState.initialPan = { x: canvasPanX, y: canvasPanY };
       console.log(`[iOS Debug] Pinch start - distance: ${touchState.lastDistance}, scale: ${canvasScale}`);
     }
-    // Don't prevent default for zoom gestures
-    if (e.touches.length < 2) {
-      e.preventDefault();
-    }
+    // Allow native zoom behavior on iOS - don't prevent default for any gestures
+    // e.preventDefault() blocks iOS zoom
   }
   
   function handleCanvasTouchMove(e) {
@@ -1778,10 +1776,8 @@
       touchState.lastDistance = currentDistance;
     }
     touchState.lastTouches = Array.from(e.touches);
-    // Don't prevent default for zoom gestures
-    if (e.touches.length < 2) {
-      e.preventDefault();
-    }
+    // Allow native zoom behavior on iOS - don't prevent default for any gestures
+    // e.preventDefault() blocks iOS zoom
   }
   
   function handleCanvasTouchEnd(e) {

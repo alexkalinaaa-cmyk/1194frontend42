@@ -1011,6 +1011,11 @@
       const savedLocation = await loadLocation(jid || "");
       console.log('Loading report data for report', jid, '- job name:', jobNameInput?.value, 'job code:', jobCodeInput?.value, 'location:', savedLocation);
       locationInput.value = savedLocation;
+      
+      // Sync to iPhone controls if available
+      if (window.updateiPhoneControls) {
+        window.updateiPhoneControls();
+      }
     }
   };
   const loadLocation = async (jid) => {
@@ -1267,12 +1272,18 @@
       }
     }
 
-    // Restore scroll position after DOM updates
-    setTimeout(() => {
+    // Restore scroll position after DOM updates - iPhone needs longer delay
+    const restoreScroll = () => {
       if (UI.unifiedList && scrollPosition > 0) {
         UI.unifiedList.scrollTop = scrollPosition;
       }
-    }, 0);
+    };
+    
+    // Try multiple times with different delays to ensure it works on iPhone
+    setTimeout(restoreScroll, 0);
+    setTimeout(restoreScroll, 10);
+    setTimeout(restoreScroll, 50);
+    setTimeout(restoreScroll, 100);
 
     // Note: Unattached Report IDs section removed - all Report IDs are now created with job names
   }
@@ -4858,7 +4869,7 @@
           console.log('Permission object:', permission);
           
           if (permission.state === 'denied') {
-            alert('Location permission denied. Please enable location access in your browser settings.\n\nYou can enter the address manually in the location field.');
+            alert('🚫 Location Access Blocked\n\nTo use the locate feature, please:\n\n1. Click the location icon in your browser\'s address bar\n2. Select "Allow" for location access\n3. Refresh the page and try again\n\nAlternatively, you can manually enter the address in the location field below.');
             locateBtn.textContent = '📍 Locate';
             locateBtn.disabled = false;
             return;
