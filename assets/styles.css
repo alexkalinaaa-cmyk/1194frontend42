@@ -1370,12 +1370,27 @@ img {
     padding: 6px;
   }
   
-  .toolbar.thin .left {
+  /* Keep floor plan toolbar inline on iPhone */
+  .floorplan-viewer-grid .toolbar.thin .left {
+    width: auto;
+    flex: 1;
+    justify-content: flex-start;
+  }
+  
+  .floorplan-viewer-grid .toolbar.thin .right {
+    width: auto;
+    justify-content: flex-end;
+    border-top: none;
+    padding-top: 0;
+  }
+  
+  /* Other modals can still use collapsing toolbar */
+  .modal:not(#floorplan-viewer) .toolbar.thin .left {
     width: 100%;
     justify-content: center;
   }
   
-  .toolbar.thin .right {
+  .modal:not(#floorplan-viewer) .toolbar.thin .right {
     width: 100%;
     justify-content: center;
     border-top: 1px solid var(--border);
@@ -1419,20 +1434,23 @@ img {
   
   /* Floor plan viewer optimization */
   .floorplan-viewer-grid {
-    width: calc(100vw - 10px);
-    max-height: calc(100vh - 40px);
+    width: calc(100vw - 20px);
+    max-width: 100vw;
+    max-height: calc(100vh - 60px);
+    margin: 10px;
   }
   
   /* Enable pinch-zoom on iPhone floor plan canvas */
   .floor-canvas-container canvas {
-    touch-action: pan-x pan-y pinch-zoom !important;
+    touch-action: manipulation !important;
   }
   
   .floor-viewer-content {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr 160px;
-    min-height: 400px;
-    max-height: calc(100vh - 120px);
+    min-height: 350px;
+    max-height: calc(100vh - 140px);
+    overflow: hidden;
   }
   
   .floor-card-tray {

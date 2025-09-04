@@ -25,243 +25,47 @@
   
   
 
-  // Enhanced reverse geocoding with multiple service fallbacks
+  // Simplified reverse geocoding using Google Maps API only
   async function reverseGeocodeEnhanced(lat, lng) {
-    const services = [
-      // Primary: Google Maps API via backend
-      async () => {
-        const response = await fetch(`${RENDER_BACKEND_URL}/api/google-geocode?lat=${lat}&lng=${lng}`, {
-          headers: {
-            'X-API-Key': 'jl-annotator-secure-key-2024'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.address && !data.fallback) {
-            console.log('[Google Maps] Successfully geocoded:', data.address);
-            return data.address;
-          } else if (data && data.fallback) {
-            throw new Error('Google Maps returned fallback coordinates');
-          }
-        }
-        throw new Error('Google Maps geocoding failed');
-      },
+    try {
+      console.log('[Google Maps] Starting reverse geocoding for:', lat, lng);
       
-      // Fallback 1: OpenStreetMap Nominatim with higher zoom for better precision
-      async () => {
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&zoom=18`, {
-          headers: {
-            'User-Agent': 'JL-Field-Reports-App/1.0'
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.display_name) {
-            const address = data.address;
-            if (address) {
-              const addressParts = [];
-              const locationParts = [];
-              
-              // Build street address part with more detail
-              if (address.house_number && address.road) {
-                addressParts.push(`${address.house_number} ${address.road}`);
-              } else if (address.road) {
-                addressParts.push(address.road);
-              } else if (address.commercial || address.building || address.amenity) {
-                addressParts.push(address.commercial || address.building || address.amenity);
-              }
-              
-              // Build location part (City, State ZIP)
-              const city = address.city || address.town || address.village || address.municipality;
-              if (city) locationParts.push(city);
-              if (address.state) locationParts.push(address.state);
-              
-              // Add ZIP code if available
-              if (address.postcode) {
-                if (locationParts.length > 0) {
-                  locationParts[locationParts.length - 1] += ` ${address.postcode}`;
-                } else {
-                  locationParts.push(address.postcode);
-                }
-              }
-              
-              // Combine parts
-              const fullAddress = [];
-              if (addressParts.length > 0) fullAddress.push(addressParts.join(' '));
-              if (locationParts.length > 0) fullAddress.push(locationParts.join(', '));
-              
-              if (fullAddress.length > 0) {
-                return fullAddress.join(', ');
-              }
-            }
-            return data.display_name;
-          }
+      const response = await fetch(`${RENDER_BACKEND_URL}/api/google-geocode?lat=${lat}&lng=${lng}`, {
+        headers: {
+          'X-API-Key': 'jl-annotator-secure-key-2024'
         }
-        throw new Error('Nominatim failed');
-      },
+      });
       
-      // Fallback: BigDataCloud (free tier, often more accurate for US addresses)
-      async () => {
-        const response = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.locality) {
-            const parts = [];
-            if (data.streetNumber && data.streetName) {
-              parts.push(`${data.streetNumber} ${data.streetName}`);
-            } else if (data.streetName) {
-              parts.push(data.streetName);
-            }
-            if (data.city) parts.push(data.city);
-            if (data.principalSubdivision) parts.push(data.principalSubdivision);
-            if (data.postcode) parts.push(data.postcode);
-            
-            if (parts.length > 0) {
-              return parts.join(', ');
-            }
-          }
-        }
-        throw new Error('BigDataCloud failed');
+      if (!response.ok) {
+        throw new Error(`Google Maps API request failed: ${response.status}`);
       }
-    ];
-    
-    // Try each service in order
-    for (let i = 0; i < services.length; i++) {
-      try {
-        const result = await services[i]();
-        if (result && result !== `${lat}, ${lng}`) {
-          console.log(`Geocoding successful with service ${i + 1}: ${result}`);
-          return result;
-        }
-      } catch (error) {
-        console.log(`Geocoding service ${i + 1} failed:`, error.message);
-        if (i === services.length - 1) {
-          // Last service failed, return coordinates
-          throw error;
-        }
+      
+      const data = await response.json();
+      
+      if (data && data.address && !data.fallback) {
+        console.log('[Google Maps] Successfully geocoded:', data.address);
+        return data.address;
+      } else if (data && data.fallback) {
+        console.warn('[Google Maps] Returned fallback coordinates');
+        return data.address; // Still return the fallback coordinates
       }
+      
+      throw new Error('No address data received from Google Maps');
+    } catch (error) {
+      console.error('[Google Maps] Reverse geocoding failed:', error);
+      // Return coordinates as fallback
+      return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     }
-    
-    // Return coordinates as ultimate fallback
-    return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
   }
 
   // Keep the original function for backward compatibility
   async function reverseGeocode(lat, lng) {
-    try {
-      return await reverseGeocodeEnhanced(lat, lng);
-    } catch (error) {
-      console.warn('All reverse geocoding services failed:', error);
-      return `${lat}, ${lng}`;
-    }
+    return await reverseGeocodeEnhanced(lat, lng);
   }
 
   // API Configuration - Direct connection to Render backend
   const RENDER_BACKEND_URL = 'https://one193fbackend432.onrender.com';
 
-  // IP Geolocation as ultimate fallback
-  async function getIPLocation() {
-    const services = [
-      // Primary: ipapi.co (free, accurate)
-      async () => {
-        const response = await fetch('https://ipapi.co/json/', {
-          timeout: 5000
-        });
-        const data = await response.json();
-        if (data.latitude && data.longitude) {
-          return {
-            coords: {
-              latitude: parseFloat(data.latitude),
-              longitude: parseFloat(data.longitude),
-              accuracy: 5000 // IP location is typically accurate to city level
-            },
-            timestamp: Date.now()
-          };
-        }
-        throw new Error('Invalid IP location data');
-      },
-      
-      // Fallback: ip-api.com
-      async () => {
-        const response = await fetch('http://ip-api.com/json/', {
-          timeout: 5000
-        });
-        const data = await response.json();
-        if (data.status === 'success' && data.lat && data.lon) {
-          return {
-            coords: {
-              latitude: parseFloat(data.lat),
-              longitude: parseFloat(data.lon),
-              accuracy: 5000
-            },
-            timestamp: Date.now()
-          };
-        }
-        throw new Error('IP API failed or no location data');
-      }
-    ];
-    
-    for (let i = 0; i < services.length; i++) {
-      try {
-        console.log(`Trying IP geolocation service ${i + 1}`);
-        return await services[i]();
-      } catch (error) {
-        console.log(`IP geolocation service ${i + 1} failed:`, error.message);
-        if (i === services.length - 1) {
-          throw error;
-        }
-      }
-    }
-  }
-
-  // Google Geolocation API for enhanced positioning
-  async function getGoogleGeolocation(apiKey) {
-    if (!apiKey) {
-      throw new Error('Google API key not provided');
-    }
-    
-    try {
-      // Collect WiFi and cell tower info if available
-      const requestData = {
-        considerIp: true,
-        wifiAccessPoints: [],
-        cellTowers: []
-      };
-      
-      const response = await fetch(`https://www.googleapis.com/geolocation/v1/geolocate?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Google Geolocation API error: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.location) {
-        return {
-          coords: {
-            latitude: data.location.lat,
-            longitude: data.location.lng,
-            accuracy: data.accuracy || 1000
-          },
-          timestamp: Date.now()
-        };
-      }
-      
-      throw new Error('No location data from Google API');
-    } catch (error) {
-      console.error('Google Geolocation API failed:', error);
-      throw error;
-    }
-  }
 
   // Retry logic with exponential backoff
   async function retryWithBackoff(fn, maxRetries = 2, baseDelay = 1000) {
@@ -1338,6 +1142,10 @@
 
   async function renderUnifiedList(){
     if(!UI.unifiedList) return;
+    
+    // Save current scroll position
+    const scrollPosition = UI.unifiedList.scrollTop;
+    
     const names = await loadNames();
     const ids = await loadIds();
     const cur = getCur();
@@ -1458,6 +1266,13 @@
         UI.unifiedList.appendChild(separator);
       }
     }
+
+    // Restore scroll position after DOM updates
+    setTimeout(() => {
+      if (UI.unifiedList && scrollPosition > 0) {
+        UI.unifiedList.scrollTop = scrollPosition;
+      }
+    }, 0);
 
     // Note: Unattached Report IDs section removed - all Report IDs are now created with job names
   }
