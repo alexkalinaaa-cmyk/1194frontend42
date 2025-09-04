@@ -1724,13 +1724,6 @@
       handleCanvasMouseDown(mouseEvent);
     }
     // For all other cases (pan mode, multi-touch), let iOS handle natively
-      touchState.lastDistance = getTouchDistance(touch1, touch2);
-      touchState.initialScale = canvasScale;
-      touchState.initialPan = { x: canvasPanX, y: canvasPanY };
-      console.log(`[iOS Debug] Pinch start - distance: ${touchState.lastDistance}, scale: ${canvasScale}`);
-    }
-    // Allow native zoom behavior on iOS - don't prevent default for any gestures
-    // e.preventDefault() blocks iOS zoom
   }
   
   function handleCanvasTouchMove(e) {
@@ -1792,7 +1785,7 @@
       console.log(`[iOS Debug] Ending pinch zoom mode`);
       touchState.lastDistance = 0;
     }
-    e.preventDefault();
+    // Don't preventDefault to allow native iOS zoom
   }
   
   // Helper function to calculate distance between two touches
