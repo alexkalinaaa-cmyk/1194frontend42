@@ -1640,39 +1640,57 @@ button[data-floor-tool].active,
     transform-origin: top left !important;
   }
   
-  /* 2-column layout for child report buttons (IDs) */
+  /* TRUE 2-column layout for ALL reports - container setup */
+  .jobs-list {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    align-items: flex-start !important;
+  }
+  
+  /* Report name items (containers) - 50% width each for side-by-side */
+  .report-name-item {
+    flex: 1 1 calc(50% - 2px) !important;
+    min-width: calc(50% - 2px) !important;
+    max-width: calc(50% - 2px) !important;
+    margin: 0 !important;
+    margin-bottom: 4px !important;
+  }
+  
+  /* 2-column layout for child report buttons (IDs) within each item */
   .child-reports {
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: wrap !important;
-    gap: 4px !important;
+    gap: 2px !important;
     margin: 0 !important;
   }
   
   .child-report-btn {
-    flex: 1 1 calc(50% - 2px) !important;
-    min-width: calc(50% - 2px) !important;
-    max-width: calc(50% - 2px) !important;
-    font-size: 10px !important;
-    padding: 8px 4px !important;
-    min-height: 36px !important;
+    flex: 1 1 calc(50% - 1px) !important;
+    min-width: calc(50% - 1px) !important;
+    max-width: calc(50% - 1px) !important;
+    font-size: 8px !important;
+    padding: 4px 2px !important;
+    min-height: 28px !important;
     margin: 0 !important;
     text-overflow: ellipsis !important;
     overflow: hidden !important;
     white-space: nowrap !important;
   }
   
-  /* CRITICAL: Also style the GIANT red report name buttons */
+  /* CRITICAL: Style red report name buttons for 2-column layout */
   .report-name-btn {
-    font-size: 10px !important;
-    padding: 6px 4px !important;
-    min-height: 32px !important;
+    font-size: 8px !important;
+    padding: 4px 2px !important;
+    min-height: 28px !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 auto !important;
     text-overflow: ellipsis !important;
     overflow: hidden !important;
     white-space: nowrap !important;
+    line-height: 1.2 !important;
   }
   
   /* CRITICAL: Fix GIANT report name modal textbox on iPhone - Override ALL themes */
