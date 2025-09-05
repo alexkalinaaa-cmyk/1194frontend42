@@ -1646,8 +1646,9 @@ button[data-floor-tool].active,
     padding: 4px 6px !important;
     min-height: 24px !important;
     margin: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
+    width: auto !important;      /* Override universal 80% rule */
+    max-width: 48% !important;   /* Force fit in grid column with gap */
+    flex-shrink: 0 !important;   /* Prevent shrinking */
     text-overflow: ellipsis !important;
     overflow: hidden !important;
     white-space: nowrap !important;
@@ -1682,7 +1683,7 @@ button[data-floor-tool].active,
   .pdf-viewer-content iframe {
     width: 100% !important;
     height: 100% !important;
-    transform: scale(0.9) !important;
+    transform: scale(0.8) !important;  /* 10% more zoom out for perfect fit */
     transform-origin: top left !important;
   }
   
