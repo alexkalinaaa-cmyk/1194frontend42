@@ -1611,12 +1611,7 @@ button[data-floor-tool].active,
     min-width: 60px !important;
   }
   
-  /* ===== CONSOLIDATED IPHONE FIXES ===== */
-  
-  /* Floor plan canvas height increase for iPhone */
-  .floor-canvas-container {
-    min-height: 250px !important; /* 200px + 50px */
-  }
+  /* ===== COMPLETE IPHONE PORTRAIT FIXES ===== */
   
   /* Remove ALL dividing bars on iPhone */
   .app-header,
@@ -1627,7 +1622,25 @@ button[data-floor-tool].active,
     border-bottom: none !important;
   }
   
-  /* iPhone-only 2-column layout for portrait orientation */
+  /* Floor plan canvas height increase for iPhone */
+  .floor-canvas-container {
+    min-height: 250px !important;
+  }
+  
+  /* iPhone PDF viewer - prevent right-side cutoff */
+  .pdf-viewer-container {
+    width: 95vw !important;
+    height: 80vh !important;
+  }
+  
+  .pdf-viewer-content iframe {
+    width: 100% !important;
+    height: 100% !important;
+    transform: scale(0.7) !important;
+    transform-origin: top left !important;
+  }
+  
+  /* 2-column layout for child report buttons (IDs) */
   .child-reports {
     display: flex !important;
     flex-direction: row !important;
@@ -1649,8 +1662,20 @@ button[data-floor-tool].active,
     white-space: nowrap !important;
   }
   
+  /* CRITICAL: Also style the GIANT red report name buttons */
+  .report-name-btn {
+    font-size: 10px !important;
+    padding: 6px 4px !important;
+    min-height: 32px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+  }
   
-  /* Fix ALL iPhone input zoom bugs */
+  /* Fix iPhone input zoom bugs */
   #notes,
   #job-name-iphone,
   #job-code-iphone, 
@@ -1658,19 +1683,6 @@ button[data-floor-tool].active,
   .job-input-compact,
   .location-input-iphone {
     font-size: 16px !important;
-  }
-  
-  /* Fix iPhone PDF viewer - proper fit */
-  .pdf-viewer-container {
-    width: 95vw !important;
-    height: 80vh !important;
-  }
-  
-  .pdf-viewer-content iframe {
-    width: 100% !important;
-    height: 100% !important;
-    transform: scale(0.7) !important;  /* Even more zoom out to prevent cutoff */
-    transform-origin: top left !important;
   }
   
 }
