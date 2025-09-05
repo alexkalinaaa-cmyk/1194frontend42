@@ -1656,14 +1656,14 @@ button[data-floor-tool].active,
     display: contents !important;
   }
   
-  /* Report name buttons - 50% width each, side-by-side */
+  /* Report name buttons - 50% width each, side-by-side, SMALL */
   .report-name-btn {
     width: calc(50% - 4px) !important;
     display: inline-block !important;
     vertical-align: top !important;
-    font-size: 9px !important;
-    padding: 4px !important;
-    min-height: 28px !important;
+    font-size: 8px !important;
+    padding: 3px !important;
+    min-height: 24px !important;
     margin: 2px !important;
     text-overflow: ellipsis !important;
     overflow: hidden !important;
@@ -1671,14 +1671,14 @@ button[data-floor-tool].active,
     box-sizing: border-box !important;
   }
   
-  /* Report ID buttons - 50% width each, side-by-side, BIGGER than names */
+  /* Report ID buttons - 50% width each, side-by-side, MICROSCOPIC for tiny iPhone */
   .child-report-btn {
     width: calc(50% - 4px) !important;
     display: inline-block !important;
     vertical-align: top !important;
-    font-size: 11px !important;
-    padding: 6px !important;
-    min-height: 36px !important;
+    font-size: 7px !important;
+    padding: 2px !important;
+    min-height: 20px !important;
     margin: 2px !important;
     text-overflow: ellipsis !important;
     overflow: hidden !important;
