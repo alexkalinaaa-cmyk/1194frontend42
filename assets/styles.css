@@ -1640,60 +1640,50 @@ button[data-floor-tool].active,
     transform-origin: top left !important;
   }
   
-  /* NUCLEAR OPTION: Force TRUE 2-column layout with CSS Grid */
+  /* SIMPLE 2-COLUMN LAYOUT: Report names side-by-side, Report IDs side-by-side */
+  
+  /* Remove container constraints - let everything flow naturally */
   .jobs-list {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 6px !important;
+    display: block !important;
     width: 100% !important;
   }
   
-  /* Report name items - fit grid cells perfectly */
   .report-name-item {
-    display: flex !important;
-    flex-direction: column-reverse !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    margin: 0 !important;
+    display: contents !important;
+  }
+  
+  .child-reports {
+    display: contents !important;
+  }
+  
+  /* Report name buttons - 50% width each, side-by-side */
+  .report-name-btn {
+    width: calc(50% - 4px) !important;
+    display: inline-block !important;
+    vertical-align: top !important;
+    font-size: 9px !important;
+    padding: 4px !important;
+    min-height: 28px !important;
+    margin: 2px !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
     box-sizing: border-box !important;
   }
   
-  /* 2-column layout for child report buttons (IDs) within each item */
-  .child-reports {
-    display: flex !important;
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    gap: 2px !important;
-    margin: 0 !important;
-  }
-  
+  /* Report ID buttons - 50% width each, side-by-side, BIGGER than names */
   .child-report-btn {
-    flex: 1 1 calc(50% - 1px) !important;
-    min-width: calc(50% - 1px) !important;
-    max-width: calc(50% - 1px) !important;
-    font-size: 10px !important;
-    padding: 6px 4px !important;
-    min-height: 34px !important;
-    margin: 0 !important;
+    width: calc(50% - 4px) !important;
+    display: inline-block !important;
+    vertical-align: top !important;
+    font-size: 11px !important;
+    padding: 6px !important;
+    min-height: 36px !important;
+    margin: 2px !important;
     text-overflow: ellipsis !important;
     overflow: hidden !important;
     white-space: nowrap !important;
-    line-height: 1.2 !important;
-  }
-  
-  /* CRITICAL: Style red report name buttons for 2-column layout */
-  .report-name-btn {
-    font-size: 9px !important;
-    padding: 5px 3px !important;
-    min-height: 30px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 auto !important;
-    text-overflow: ellipsis !important;
-    overflow: hidden !important;
-    white-space: nowrap !important;
-    line-height: 1.2 !important;
+    box-sizing: border-box !important;
   }
   
   /* CRITICAL: Fix GIANT report name modal textbox on iPhone - Override ALL themes */
