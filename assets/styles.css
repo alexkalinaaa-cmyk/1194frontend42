@@ -623,7 +623,7 @@ button[data-floor-tool].active,
 .pdf-card, .pdf-card * { opacity: 1 !important; }
 .pdf-icon { font-size:24px; flex-shrink:0; background:linear-gradient(135deg, #e74c3c, #c0392b); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
 .pdf-info { flex:1; min-width:0; }
-.pdf-name { font-weight:600; color:#e74c3c; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pdf-name { font-weight:600; color:#e74c3c; margin-bottom:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:calc(100% - 70px); }
 .pdf-meta { font-size:12px; color:var(--muted); }
 .pdf-delete { position:absolute; top:8px; right:8px; width:24px; height:24px; border-radius:50%; background:#7f1d1d; color:#fff; border:none; cursor:pointer; font-weight:700; line-height:24px; text-align:center; font-size:14px; }
 .pdf-delete:hover { background:#991b1b; }
@@ -1611,70 +1611,80 @@ button[data-floor-tool].active,
     min-width: 60px !important;
   }
   
-  /* Fix any iPad-first styles that might interfere */
-  @supports (-webkit-touch-callout: none) {
-    .btn {
-      min-width: auto !important;
-      min-height: 44px !important;
-    }
-    
-    .tool {
-      min-width: 40px !important;
-      min-height: 40px !important;
-    }
-    
-    .workspace-grid {
-      grid-template-columns: 1fr !important;
-      grid-template-rows: 180px 1fr !important;
-    }
-    
-    /* Floor plan canvas height increase for iPhone */
-    .floor-canvas-container {
-      min-height: 250px !important; /* 200px + 50px */
-    }
-    
-    /* Remove dividing bars on iPhone */
-    .sidebar-header {
-      border-bottom: none !important;
-    }
-    
-    /* Fix New Report button - ensure it's not affected by other changes */
-    #job-create {
-      width: auto !important;
-      display: inline-block !important;
-      margin: 0 !important;
-    }
-    
-    /* Simple 2-column grid for report buttons on iPhone */
-    .report-name-item > div:first-child {
-      display: grid !important;
-      grid-template-columns: 1fr 1fr !important;
-      gap: 4px !important;
-      margin-left: 0px !important;
-      margin-bottom: 4px !important;
-    }
-    
-    /* Compact report buttons - keep similar style but smaller */
-    .report-name-btn {
-      font-size: 10px !important;
-      padding: 6px 8px !important;
-      min-height: 28px !important;
-      margin: 0 !important;
-      width: 100% !important;
-      max-width: 100% !important;
-    }
-    
-    .child-report-btn {
-      font-size: 13px !important;
-      padding: 8px 10px !important;
-      min-height: 36px !important;
-      margin-bottom: 3px !important;
-    }
-    
-    /* Fix annotation notes zoom bug - prevent iOS zoom on focus */
-    #notes {
-      font-size: 16px !important;
-    }
+  /* ===== CONSOLIDATED IPHONE FIXES ===== */
+  
+  /* Floor plan canvas height increase for iPhone */
+  .floor-canvas-container {
+    min-height: 250px !important; /* 200px + 50px */
   }
+  
+  /* Remove dividing bars on iPhone */
+  .sidebar-header {
+    border-bottom: none !important;
+  }
+  
+  /* Fix New Report button - ensure it's not affected by other changes */
+  #job-create {
+    width: auto !important;
+    display: inline-block !important;
+    margin: 0 !important;
+  }
+  
+  /* AGGRESSIVE 2-column report button layout */
+  .child-reports {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 3px !important;
+    margin-left: 0px !important;
+    margin-top: 0px !important;
+    margin-bottom: 4px !important;
+  }
+  
+  /* Ultra-compact report buttons for true 2-column fit */
+  .report-name-btn {
+    font-size: 9px !important;
+    padding: 4px 6px !important;
+    min-height: 24px !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+  }
+  
+  .child-report-btn {
+    font-size: 11px !important;
+    padding: 6px 8px !important;
+    min-height: 32px !important;
+    margin-bottom: 2px !important;
+    text-overflow: ellipsis !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+  }
+  
+  /* Fix ALL iPhone input zoom bugs */
+  #notes,
+  #job-name-iphone,
+  #job-code-iphone, 
+  #location-field-iphone,
+  .job-input-compact,
+  .location-input-iphone {
+    font-size: 16px !important;
+  }
+  
+  /* Fix iPhone PDF viewer - proper fit */
+  .pdf-viewer-container {
+    width: 95vw !important;
+    height: 80vh !important;
+  }
+  
+  .pdf-viewer-content iframe {
+    width: 100% !important;
+    height: 100% !important;
+    transform: scale(0.9) !important;
+    transform-origin: top left !important;
+  }
+  
 }
 "/* force deployment $(date) */" 
