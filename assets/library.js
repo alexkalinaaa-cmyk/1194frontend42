@@ -29,6 +29,8 @@
   async function reverseGeocodeEnhanced(lat, lng) {
     try {
       console.log('[Google Maps] Starting reverse geocoding for:', lat, lng);
+      console.log('[Google Maps] Backend URL:', RENDER_BACKEND_URL);
+      console.log('[Google Maps] Full API URL:', `${RENDER_BACKEND_URL}/api/google-geocode?lat=${lat}&lng=${lng}`);
       
       const response = await fetch(`${RENDER_BACKEND_URL}/api/google-geocode?lat=${lat}&lng=${lng}`, {
         headers: {
@@ -36,8 +38,13 @@
         }
       });
       
+      console.log('[Google Maps] Response status:', response.status);
+      console.log('[Google Maps] Response ok:', response.ok);
+      
       if (!response.ok) {
-        throw new Error(`Google Maps API request failed: ${response.status}`);
+        const errorText = await response.text();
+        console.error('[Google Maps] Error response body:', errorText);
+        throw new Error(`Google Maps API request failed: ${response.status} - ${errorText}`);
       }
       
       const data = await response.json();
@@ -53,7 +60,14 @@
       throw new Error('No address data received from Google Maps');
     } catch (error) {
       console.error('[Google Maps] Reverse geocoding failed:', error);
+      console.error('[Google Maps] Error type:', error.constructor.name);
+      console.error('[Google Maps] Error message:', error.message);
+      if (error.stack) {
+        console.error('[Google Maps] Error stack:', error.stack);
+      }
+      
       // Return coordinates as fallback
+      console.log('[Google Maps] Using fallback coordinate address');
       return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     }
   }

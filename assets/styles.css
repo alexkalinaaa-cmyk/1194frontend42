@@ -1675,18 +1675,26 @@ button[data-floor-tool].active,
     white-space: nowrap !important;
   }
   
-  /* CRITICAL: Fix GIANT report name modal textbox on iPhone */
-  .report-name-input {
-    font-size: 12px !important;
+  /* CRITICAL: Fix GIANT report name modal textbox on iPhone - Override ALL themes */
+  .report-name-input,
+  [data-theme="light"] .report-name-input,
+  [data-theme="dark"] .report-name-input,
+  [data-theme="green"] .report-name-input,
+  [data-theme="purple"] .report-name-input,
+  [data-theme="sunset"] .report-name-input {
+    font-size: 16px !important; /* MUST be 16px to prevent iPhone zoom */
     padding: 6px 8px !important;
     max-height: 44px !important;
     width: 90% !important;
-    line-height: 1.4 !important;
+    min-width: 90% !important;
+    max-width: 90% !important;
+    line-height: 1.2 !important; /* Reduced to keep compact with 16px font */
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     display: -webkit-box !important;
     -webkit-line-clamp: 2 !important;
     -webkit-box-orient: vertical !important;
+    box-sizing: border-box !important;
   }
   
   /* Fix iPhone input zoom bugs */
@@ -1695,7 +1703,8 @@ button[data-floor-tool].active,
   #job-code-iphone, 
   #location-field-iphone,
   .job-input-compact,
-  .location-input-iphone {
+  .location-input-iphone,
+  .report-name-input {
     font-size: 16px !important;
   }
   
