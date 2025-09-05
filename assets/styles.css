@@ -1643,18 +1643,23 @@ button[data-floor-tool].active,
   /* TRUE 2-column layout for ALL reports - container setup */
   .jobs-list {
     display: flex !important;
+    flex-direction: row !important;
     flex-wrap: wrap !important;
     gap: 4px !important;
     align-items: flex-start !important;
+    justify-content: flex-start !important;
   }
   
   /* Report name items (containers) - 50% width each for side-by-side */
   .report-name-item {
+    display: flex !important;
+    flex-direction: column-reverse !important; 
     flex: 1 1 calc(50% - 2px) !important;
     min-width: calc(50% - 2px) !important;
     max-width: calc(50% - 2px) !important;
     margin: 0 !important;
     margin-bottom: 4px !important;
+    box-sizing: border-box !important;
   }
   
   /* 2-column layout for child report buttons (IDs) within each item */
