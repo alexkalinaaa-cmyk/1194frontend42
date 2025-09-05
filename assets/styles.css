@@ -1618,8 +1618,12 @@ button[data-floor-tool].active,
     min-height: 250px !important; /* 200px + 50px */
   }
   
-  /* Remove dividing bars on iPhone */
-  .sidebar-header {
+  /* Remove ALL dividing bars on iPhone */
+  .sidebar-header,
+  .bar,
+  .toolbar,
+  .app-header,
+  .pdf-viewer-header {
     border-bottom: none !important;
   }
   
@@ -1630,35 +1634,52 @@ button[data-floor-tool].active,
     margin: 0 !important;
   }
   
-  /* AGGRESSIVE 2-column report button layout */
-  .child-reports {
+  /* COMPLETE RESTRUCTURE: Make ENTIRE report section 2-column grid */
+  .report-name-item {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 3px !important;
+    margin-bottom: 4px !important;
+    align-items: start !important;
+  }
+  
+  /* Report name button container - spans first column */
+  .report-name-item > div:first-child {
+    grid-column: 1 / -1 !important;  /* Span both columns */
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
     gap: 3px !important;
     margin-left: 0px !important;
-    margin-top: 0px !important;
-    margin-bottom: 4px !important;
   }
   
-  /* Ultra-compact report buttons for true 2-column fit */
-  .report-name-btn {
-    font-size: 9px !important;
-    padding: 4px 6px !important;
-    min-height: 24px !important;
+  /* Child reports container - spans second row, both columns */
+  .child-reports {
+    grid-column: 1 / -1 !important;  /* Span both columns */
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 3px !important;
     margin: 0 !important;
-    width: auto !important;      /* Override universal 80% rule */
-    max-width: 48% !important;   /* Force fit in grid column with gap */
-    flex-shrink: 0 !important;   /* Prevent shrinking */
+  }
+  
+  /* Ultra-compact report name buttons */
+  .report-name-btn {
+    font-size: 8px !important;      /* Even smaller font */
+    padding: 3px 5px !important;    /* Even smaller padding */
+    min-height: 20px !important;    /* Even smaller height */
+    margin: 0 !important;
+    width: 100% !important;         /* Fill grid cell completely */
+    max-width: 100% !important;     /* Fill grid cell completely */
     text-overflow: ellipsis !important;
     overflow: hidden !important;
     white-space: nowrap !important;
   }
   
+  /* Ultra-compact child report buttons */
   .child-report-btn {
-    font-size: 11px !important;
-    padding: 6px 8px !important;
-    min-height: 32px !important;
-    margin-bottom: 2px !important;
+    font-size: 10px !important;     /* Smaller font */
+    padding: 4px 6px !important;    /* Smaller padding */
+    min-height: 28px !important;    /* Smaller height */
+    margin: 0 !important;           /* No margin */
     text-overflow: ellipsis !important;
     overflow: hidden !important;
     white-space: nowrap !important;
@@ -1683,7 +1704,7 @@ button[data-floor-tool].active,
   .pdf-viewer-content iframe {
     width: 100% !important;
     height: 100% !important;
-    transform: scale(0.8) !important;  /* 10% more zoom out for perfect fit */
+    transform: scale(0.7) !important;  /* Even more zoom out to prevent cutoff */
     transform-origin: top left !important;
   }
   
