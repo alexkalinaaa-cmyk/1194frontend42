@@ -1675,6 +1675,20 @@ button[data-floor-tool].active,
     white-space: nowrap !important;
   }
   
+  /* CRITICAL: Fix GIANT report name modal textbox on iPhone */
+  .report-name-input {
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+    max-height: 44px !important;
+    width: 90% !important;
+    line-height: 1.4 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+  }
+  
   /* Fix iPhone input zoom bugs */
   #notes,
   #job-name-iphone,
@@ -1683,6 +1697,20 @@ button[data-floor-tool].active,
   .job-input-compact,
   .location-input-iphone {
     font-size: 16px !important;
+  }
+  
+  /* Center and fix notes button emoji on iPhone - prevent squishing */
+  #btn-notes {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 16px !important;
+    padding: 0 !important;
+    text-align: center !important;
   }
   
 }
